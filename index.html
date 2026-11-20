@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Royale — Билборд и Арена лиг</title>
+    <style>
+        :root {
+            --bg-arena: #0b1120;
+            --bg-grad: radial-gradient(circle at top, #1e293b 0%, #0b1120 72%);
+            --card-bg: #172033;
+            --card-top: #222f49;
+            --panel-bg: #0e1525;
+            --border: #334155;
+            --border-light: #475569;
+
+            --elixir: #d946ef;
+            --elixir-dark: #86198f;
+            --gold: #fbbf24;
+            --gold-dark: #b45309;
+            --silver: #e2e8f0;
+            --bronze: #d97706;
+            --shield: #38bdf8;
+            --shield-dark: #0369a1;
+            --boost: #a855f7;
+            --boost-dark: #6b21a8;
+            --strike: #ef4444;
+            --strike-dark: #991b1b;
+
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg-grad);
+            color: var(--text);
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 820px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card {
+            background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bg) 100%);
+            border: 2px solid var(--border-light);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 12px 0 #070b14, 0 18px 30px rgba(0, 0, 0, 0.55);
+        }
+
+        .header-banner {
+            text-align: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            margin-bottom: 14px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--gold);
+            text-shadow: 0 3px 0 var(--gold-dark), 0 6px 14px rgba(251, 191, 36, 0.25);
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        /* Билборд */
+        .billboard-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .billboard-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #fde68a;
+        }
+
+        .mode-switch {
+            display: inline-flex;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 3px;
+            gap: 4px;
+        }
+
+        .mode-btn {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 800;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .mode-btn.active {
+            background: #334155;
+            color: var(--text);
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 10px 8px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            border-bottom-width: 4px;
+            background: var(--panel-bg);
+            color: var(--muted);
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 0.88rem;
+            transition: transform 0.08s ease;
+        }
+
+        .tab-btn:active { transform: translateY(2px); }
+
+        .tab-btn.active {
+            background: linear-gradient(180deg, #fcd34d 0%, var(--gold) 100%);
+            color: #1e1b0b;
+            border-color: #fef08a;
+            border-bottom-color: var(--gold-dark);
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        }
+
+        .all-leagues-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .league-column {
+            background: var(--panel-bg);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .league-col-header {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-weight: 900;
+            font-size: 0.92rem;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .emblem-svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .player-league-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .leaderboard {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: var(--panel-bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .league-column .team-row {
+            background: #141d31;
+            padding: 8px 10px;
+        }
+
+        .team-row.place-1 {
+            border-color: var(--gold);
+            box-shadow: inset 0 0 18px rgba(251, 191, 36, 0.12);
+        }
+        .team-row.place-2 { border-color: var(--silver); }
+        .team-row.place-3 { border-color: var(--bronze); }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            margin-left: 4px;
+        }
+        .badge-gold { background: rgba(251, 191, 36, 0.2); color: var(--gold); border: 1px solid rgba(251, 191, 36, 0.45); }
+        .badge-silver { background: rgba(226, 232, 240, 0.18); color: var(--silver); border: 1px solid rgba(226, 232, 240, 0.4); }
+        .badge-bronze { background: rgba(217, 119, 6, 0.2); color: #f59e0b; border: 1px solid rgba(217, 119, 6, 0.45); }
+        .badge-shield { background: rgba(56, 189, 248, 0.2); color: var(--shield); border: 1px solid rgba(56, 189, 248, 0.45); }
+
+        .score-val {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        /* Объёмные кнопки в стиле Clash Royale */
+        .btn {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid rgba(255, 255, 255, 0.22);
+            border-bottom-width: 5px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            color: #fff;
+            text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+            transition: transform 0.08s ease, filter 0.15s ease;
+        }
+        .btn:hover:not(:disabled) { filter: brightness(1.06); }
+        .btn:active:not(:disabled) {
+            transform: translateY(3px);
+            border-bottom-width: 2px;
+        }
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            filter: grayscale(0.45);
+        }
+
+        .btn-gold {
+            background: linear-gradient(180deg, #fcd34d 0%, var(--gold) 100%);
+            color: #1e1b0b;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+            border-bottom-color: var(--gold-dark);
+        }
+        .btn-slate {
+            background: linear-gradient(180deg, #475569 0%, #334155 100%);
+            border-bottom-color: #0f172a;
+        }
+        .btn-shield {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            border-bottom-color: var(--shield-dark);
+        }
+        .btn-boost {
+            background: linear-gradient(180deg, #c084fc 0%, var(--boost) 100%);
+            border-bottom-color: var(--boost-dark);
+        }
+        .btn-strike {
+            background: linear-gradient(180deg, #fb923c 0%, #ea580c 55%, #dc2626 100%);
+            border-bottom-color: #7f1d1d;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .cards-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+        /* Форма входа */
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 440px;
+            margin: 0 auto;
+        }
+
+        .auth-error {
+            color: #fca5a5;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .account-bar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .account-email {
+            color: #fde68a;
+            font-weight: 800;
+            word-break: break-all;
+        }
+
+        /* Шкала эликсира и ошибки */
+        .hud-top {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .elixir-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #f5d0fe;
+            margin-bottom: 6px;
+        }
+
+        .elixir-bar {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+            background: #080c16;
+            padding: 5px;
+            border-radius: 10px;
+            border: 1px solid var(--elixir-dark);
+        }
+
+        .elixir-pip {
+            height: 12px;
+            border-radius: 4px;
+            background: #1e1b2e;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+        .elixir-pip.filled {
+            background: linear-gradient(180deg, #f0abfc 0%, var(--elixir) 100%);
+            box-shadow: 0 0 8px rgba(217, 70, 239, 0.75);
+        }
+
+        .lives-box {
+            text-align: right;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #fca5a5;
+        }
+
+        .problem-box {
+            background: var(--panel-bg);
+            border: 2px solid var(--border-light);
+            border-radius: 14px;
+            padding: 24px 16px;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.45);
+        }
+
+        input[type="number"], input[type="email"], input[type="password"], select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--panel-bg);
+            color: var(--text);
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+        }
+        .auth-form input[type="email"], .auth-form input[type="password"] {
+            margin-bottom: 0;
+        }
+        input[type="number"] {
+            text-align: center;
+            font-size: 1.45rem;
+            font-weight: 800;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+
+        /* Игровые карточки способностей */
+        .abilities-box {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 2px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .abilities-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 12px;
+            font-weight: 800;
+        }
+
+        .game-card {
+            position: relative;
+            background: linear-gradient(180deg, #1b253b 0%, var(--panel-bg) 100%);
+            border: 2px solid var(--border-light);
+            border-radius: 14px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+            box-shadow: 0 6px 0 #070b14;
+        }
+
+        .game-card.card-shield { border-color: rgba(56, 189, 248, 0.55); }
+        .game-card.card-boost { border-color: rgba(192, 132, 252, 0.55); }
+        .game-card.card-strike { border-color: rgba(251, 146, 60, 0.7); }
+
+        .card-art {
+            position: relative;
+            height: 86px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .art-shield { background: radial-gradient(circle, rgba(56, 189, 248, 0.34) 0%, rgba(14, 21, 37, 0.95) 75%); }
+        .art-boost { background: radial-gradient(circle, rgba(168, 85, 247, 0.36) 0%, rgba(14, 21, 37, 0.95) 75%); }
+        .art-strike {
+            background:
+                radial-gradient(circle at 55% 65%, rgba(251, 146, 60, 0.45) 0%, rgba(220, 38, 38, 0.25) 45%, rgba(14, 21, 37, 0.96) 80%);
+            box-shadow: inset 0 0 18px rgba(249, 115, 22, 0.28);
+        }
+
+        .cost-pill {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            z-index: 2;
+            background: linear-gradient(180deg, #e879f9 0%, #a21caf 100%);
+            color: #fff;
+            font-size: 0.78rem;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-art svg {
+            width: 54px;
+            height: 54px;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+        }
+        .art-strike svg {
+            width: 60px;
+            height: 60px;
+            filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.75));
+        }
+
+        .card-name {
+            font-size: 0.95rem;
+            font-weight: 900;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .card-desc {
+            font-size: 0.78rem;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .strike-target-wrap {
+            margin-top: 12px;
+            background: var(--panel-bg);
+            border: 2px solid rgba(251, 146, 60, 0.45);
+            border-radius: 12px;
+            padding: 10px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .strike-target-wrap select {
+            flex: 1;
+            min-width: 180px;
+            margin-bottom: 0;
+        }
+
+        .blocked-banner {
+            background: rgba(239, 68, 68, 0.14);
+            border: 2px solid var(--strike);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .status-log {
+            margin-top: 12px;
+            min-height: 22px;
+            font-size: 0.9rem;
+            color: var(--gold);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .hidden { display: none; }
+
+        @media (max-width: 720px) {
+            .all-leagues-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            .cards-grid-3 { grid-template-columns: 1fr; }
+            .tabs { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 520px) {
+            .hud-top { grid-template-columns: 1fr; }
+            .lives-box { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- Билборд рейтинга лиг -->
+    <div class="card" id="billboard-card">
+        <div class="header-banner">
+            <h1>Math Royale</h1>
+            <p class="subtitle">Предметная неделя • Верный ответ = +1 эликсир и +1 балл • 3 ошибки за день = стоп до завтра</p>
+        </div>
+
+        <div class="billboard-toolbar">
+            <div class="billboard-title">Билборд лиг</div>
+            <div class="mode-switch">
+                <button class="mode-btn active" id="mode-single-btn" onclick="setBillboardMode('single')">Выбранная лига</button>
+                <button class="mode-btn" id="mode-all-btn" onclick="setBillboardMode('all')">Все 3 лиги</button>
+            </div>
+        </div>
+
+        <div class="tabs" id="single-league-tabs">
+            <button class="tab-btn active" data-league="league_5_7" onclick="switchBoardLeague('league_5_7')">
+                <span class="emblem-slot" data-emblem="league_5_7"></span>
+                <span>5–7 классы</span>
+            </button>
+            <button class="tab-btn" data-league="league_8_9" onclick="switchBoardLeague('league_8_9')">
+                <span class="emblem-slot" data-emblem="league_8_9"></span>
+                <span>8 и 9А/9Б</span>
+            </button>
+            <button class="tab-btn" data-league="league_10_11" onclick="switchBoardLeague('league_10_11')">
+                <span class="emblem-slot" data-emblem="league_10_11"></span>
+                <span>10–11 классы</span>
+            </button>
+        </div>
+
+        <div id="leaderboard" class="leaderboard"></div>
+        <div id="all-leagues-board" class="all-leagues-grid hidden"></div>
+    </div>
+
+    <!-- Экран входа по email и паролю -->
+    <div class="card" id="auth-card">
+        <h2 style="margin:0 0 8px; font-size:1.2rem; font-weight:800; text-align:center;">Вход в аккаунт участника</h2>
+        <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem; text-align:center;">
+            Ошибки за день привязываются к вашему аккаунту в Firestore.
+        </p>
+
+        <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
+            <input type="email" id="login-email" placeholder="Логин (например, sergey@math.local)" required autocomplete="username">
+            <input type="password" id="login-password" placeholder="Пароль" required autocomplete="current-password">
+            <button type="submit" class="btn btn-gold" id="login-submit-btn">Войти на арену</button>
+            <div class="auth-error" id="auth-error"></div>
+        </form>
+    </div>
+
+    <!-- Выбор лиги и класса (после входа) -->
+    <div class="card hidden" id="entry-card">
+        <div class="account-bar">
+            <div>Аккаунт: <span class="account-email" id="auth-user-email"></span></div>
+            <button class="btn btn-slate" style="width:auto; padding:5px 10px; font-size:0.78rem;" onclick="handleLogout()">Выйти</button>
+        </div>
+
+        <h2 style="margin:0 0 10px; font-size:1.15rem; font-weight:800;">Выбор лиги и участника / класса</h2>
+        <div class="grid-2" id="league-select-buttons">
+            <button class="btn btn-slate" onclick="chooseLeague('league_5_7')">Лига 5–7 (+ тест)</button>
+            <button class="btn btn-slate" onclick="chooseLeague('league_8_9')">Лига 8, 9А/9Б</button>
+            <button class="btn btn-slate" onclick="chooseLeague('league_10_11')">Лига 10–11</button>
+        </div>
+        <div id="class-select-buttons" class="grid-2 hidden" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Игровой экран -->
+    <div class="card hidden" id="game-card">
+        <div class="account-bar">
+            <div>Аккаунт: <span class="account-email" id="game-user-email"></span></div>
+            <button class="btn btn-slate" style="width:auto; padding:5px 10px; font-size:0.78rem;" onclick="handleLogout()">Выйти</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
+            <div class="player-league-badge" id="player-badge"></div>
+            <button class="btn btn-slate" style="width:auto; padding:7px 12px; font-size:0.8rem;" onclick="resetPlayerChoice()">Сменить выбор</button>
+        </div>
+
+        <div class="hud-top">
+            <div>
+                <div class="elixir-label">
+                    <span>Эликсир арены</span>
+                    <span><span id="elixir-val">0</span> / 10</span>
+                </div>
+                <div class="elixir-bar" id="elixir-bar"></div>
+            </div>
+            <div class="lives-box">
+                Ошибки сегодня: <span id="errors-val">0</span> / 3
+            </div>
+        </div>
+
+        <div id="problem-section">
+            <div class="problem-box" id="problem-text">Загрузка...</div>
+            <input type="number" id="answer-input" placeholder="Введи ответ" autocomplete="off">
+            <button class="btn btn-gold" id="submit-answer-btn" onclick="submitAnswer()">Атаковать ответом</button>
+        </div>
+
+        <div id="blocked-section" class="blocked-banner hidden">
+            <strong>Лимит ошибок на сегодня исчерпан (3/3).</strong>
+            <p style="margin:6px 0 0; color:var(--muted);">Решать новые примеры и получать баллы за них можно будет завтра.</p>
+        </div>
+
+        <div class="abilities-box">
+            <div class="abilities-title">Карты эликсира</div>
+
+            <div class="cards-grid-3">
+                <div class="game-card card-shield">
+                    <div class="card-art art-shield">
+                        <span class="cost-pill">3 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <path d="M32 7L52 15V31C52 44.5 43.2 53.6 32 57.5C20.8 53.6 12 44.5 12 31V15L32 7Z" fill="#0ea5e9" stroke="#bae6fd" stroke-width="3"/>
+                            <path d="M32 14L45 20V31C45 40.2 39.4 46.8 32 49.8C24.6 46.8 19 40.2 19 31V20L32 14Z" fill="#38bdf8" fill-opacity="0.45"/>
+                            <path d="M32 21V42M23 31H41" stroke="#f0f9ff" stroke-width="3.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Щит башни</div>
+                    <div class="card-desc">Защищает от 1 вражеского удара.</div>
+                    <button class="btn btn-shield" id="btn-shield" onclick="castShield()">Активировать</button>
+                </div>
+
+                <div class="game-card card-boost">
+                    <div class="card-art art-boost">
+                        <span class="cost-pill">4 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <path d="M37 7L17 35H31L27 57L48 28H34L37 7Z" fill="#c084fc" stroke="#f3e8ff" stroke-width="3" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Ускорение</div>
+                    <div class="card-desc">Мгновенно добавляет +3 балла.</div>
+                    <button class="btn btn-boost" id="btn-boost" onclick="castBoost()">Дать +3 балла</button>
+                </div>
+
+                <div class="game-card card-strike">
+                    <div class="card-art art-strike">
+                        <span class="cost-pill">6 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <defs>
+                                <radialGradient id="fireOuter" cx="50%" cy="62%" r="55%">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="42%" stop-color="#fb923c"/>
+                                    <stop offset="78%" stop-color="#ef4444"/>
+                                    <stop offset="100%" stop-color="#991b1b"/>
+                                </radialGradient>
+                                <radialGradient id="fireCore" cx="50%" cy="68%" r="50%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="55%" stop-color="#fde047"/>
+                                    <stop offset="100%" stop-color="#f97316"/>
+                                </radialGradient>
+                            </defs>
+                            <path d="M35 6C39 13 37 19 34 23C40 18 48 19 51 27C55 37 49 51 35 56C21 58 11 48 12 35C13 25 20 19 25 14C24 19 26 22 28 23C26 17 29 10 35 6Z" fill="url(#fireOuter)" stroke="#fed7aa" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M34 27C39 31 42 37 40 44C38 50 31 53 25 50C20 47 19 40 23 34C26 30 28 28 29 24C30 27 32 28 34 27Z" fill="url(#fireCore)"/>
+                            <circle cx="15" cy="18" r="2.2" fill="#fde047"/>
+                            <circle cx="52" cy="14" r="2.4" fill="#fb923c"/>
+                            <circle cx="55" cy="43" r="1.8" fill="#fef08a"/>
+                            <circle cx="10" cy="44" r="1.8" fill="#fdba74"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Огненный шар</div>
+                    <div class="card-desc">Снимает 2 балла цели (если нет щита).</div>
+                    <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
+                </div>
+            </div>
+
+            <div class="strike-target-wrap">
+                <label for="target-select" style="font-size:0.85rem; font-weight:800; color:#fdba74;">Цель удара из вашей лиги:</label>
+                <select id="target-select"></select>
+            </div>
+        </div>
+
+        <div class="status-log" id="status-log"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    // Вставьте сюда конфигурацию вашего проекта Firebase
+     const firebaseConfig = {
+    apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
+    authDomain: "math-royale-b6986.firebaseapp.com",
+    projectId: "math-royale-b6986",
+    storageBucket: "math-royale-b6986.firebasestorage.app",
+    messagingSenderId: "1090999129516",
+    appId: "1:1090999129516:web:6bf6ff85f8f086f3355609"
+  };
+
+    const EMBLEMS = {
+        league_5_7: `
+            <svg class="emblem-svg" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M16 3L27 7.5V16.5C27 23.2 22.3 27.8 16 29.8C9.7 27.8 5 23.2 5 16.5V7.5L16 3Z" fill="#0f766e" stroke="#5eead4" stroke-width="2"/>
+                <path d="M10 12.5C12 11.5 14 11.5 16 12.8C18 11.5 20 11.5 22 12.5V20.5C20 19.5 18 19.5 16 20.8C14 19.5 12 19.5 10 20.5V12.5Z" fill="#ccfbf1" stroke="#134e4a" stroke-width="1.3"/>
+            </svg>
+        `,
+        league_8_9: `
+            <svg class="emblem-svg" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M16 3L27 7.5V16.5C27 23.2 22.3 27.8 16 29.8C9.7 27.8 5 23.2 5 16.5V7.5L16 3Z" fill="#1d4ed8" stroke="#93c5fd" stroke-width="2"/>
+                <circle cx="16" cy="11" r="2.2" fill="#fde047"/>
+                <path d="M15.2 13L10.5 23.5M16.8 13L21.5 23.5M12 19.5H20" stroke="#eff6ff" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        `,
+        league_10_11: `
+            <svg class="emblem-svg" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <path d="M16 3L27 7.5V16.5C27 23.2 22.3 27.8 16 29.8C9.7 27.8 5 23.2 5 16.5V7.5L16 3Z" fill="#7e22ce" stroke="#facc15" stroke-width="2"/>
+                <path d="M8.5 21L10.5 12L14 16.5L16 10.5L18 16.5L21.5 12L23.5 21H8.5Z" fill="#facc15" stroke="#fef08a" stroke-width="1.2" stroke-linejoin="round"/>
+            </svg>
+        `
+    };
+
+    const LEAGUES = {
+        league_5_7: {
+            title: "5–7 классы",
+            prizesCount: 3,
+            classes: ["5А", "6А", "7А", "Сергей", "Лина", "Катя"]
+        },
+        league_8_9: {
+            title: "8 и 9А/9Б",
+            prizesCount: 3,
+            classes: ["8", "9А", "9Б"]
+        },
+        league_10_11: {
+            title: "10–11 классы",
+            prizesCount: 2,
+            classes: ["10", "11"]
+        }
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const tournamentRef = doc(db, "mathRoyale", "leaguesState");
+
+    let currentUser = null;
+    let playerDocRef = null;
+    let unsubPlayerDoc = null;
+
+    let liveState = null;
+    let billboardMode = "single";
+    let boardLeague = "league_5_7";
+    let selectedLeague = localStorage.getItem("mr_league") || null;
+    let selectedClass = localStorage.getItem("mr_class") || null;
+
+    // Состояние игрока в Firestore (playerStates/{uid})
+    let elixir = 0;
+    let errorsToday = 0;
+    let errDate = "";
+    let currentAnswer = 0;
+
+    function getTodayKey() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function renderTabEmblems() {
+        document.querySelectorAll(".emblem-slot").forEach(slot => {
+            const key = slot.dataset.emblem;
+            slot.innerHTML = EMBLEMS[key] || "";
+        });
+    }
+
+    function buildElixirBar() {
+        const bar = document.getElementById("elixir-bar");
+        bar.innerHTML = Array.from({ length: 10 }, (_, i) =>
+            `<div class="elixir-pip ${i < elixir ? "filled" : ""}"></div>`
+        ).join("");
+    }
+
+    function buildDefaultState() {
+        const state = {};
+        for (const [leagueKey, cfg] of Object.entries(LEAGUES)) {
+            state[leagueKey] = {};
+            cfg.classes.forEach(cls => {
+                state[leagueKey][cls] = { score: 0, shields: 0 };
+            });
+        }
+        return state;
+    }
+
+    async function ensureStateExists() {
+        if (!currentUser) return;
+        try {
+            const snap = await getDoc(tournamentRef);
+            if (!snap.exists()) {
+                await setDoc(tournamentRef, buildDefaultState());
+                return;
+            }
+            const current = snap.data();
+            const updates = {};
+            for (const [leagueKey, cfg] of Object.entries(LEAGUES)) {
+                if (!current[leagueKey]) {
+                    updates[leagueKey] = {};
+                    cfg.classes.forEach(cls => {
+                        updates[leagueKey][cls] = { score: 0, shields: 0 };
+                    });
+                } else {
+                    cfg.classes.forEach(cls => {
+                        if (!current[leagueKey][cls]) {
+                            updates[`${leagueKey}.${cls}`] = { score: 0, shields: 0 };
+                        }
+                    });
+                }
+            }
+            if (Object.keys(updates).length > 0) {
+                await updateDoc(tournamentRef, updates);
+            }
+        } catch (err) {
+            console.error("Ошибка инициализации арены:", err);
+        }
+    }
+
+    onSnapshot(tournamentRef, (snap) => {
+        if (!snap.exists()) return;
+        liveState = snap.data();
+        renderBillboard();
+        renderTargets();
+        updateControlsState();
+    }, (err) => {
+        console.error("Ошибка чтения билборда:", err);
+    });
+
+    async function subscribePlayerState(user) {
+        if (unsubPlayerDoc) {
+            unsubPlayerDoc();
+            unsubPlayerDoc = null;
+        }
+
+        playerDocRef = doc(db, "playerStates", user.uid);
+        const today = getTodayKey();
+        const snap = await getDoc(playerDocRef);
+
+        if (!snap.exists()) {
+            await setDoc(playerDocRef, {
+                email: user.email || "",
+                elixir: 0,
+                errorsToday: 0,
+                errDate: today
+            });
+        } else {
+            const data = snap.data();
+            if (data.errDate !== today) {
+                await updateDoc(playerDocRef, {
+                    errorsToday: 0,
+                    errDate: today
+                });
+            }
+        }
+
+        unsubPlayerDoc = onSnapshot(playerDocRef, (docSnap) => {
+            if (!docSnap.exists()) return;
+            const d = docSnap.data();
+            const currentDay = getTodayKey();
+            elixir = Math.min(10, Math.max(0, Number(d.elixir || 0)));
+            errDate = d.errDate || currentDay;
+            errorsToday = errDate === currentDay ? Number(d.errorsToday || 0) : 0;
+
+            updateControlsState();
+            if (errorsToday < 3 && !document.getElementById("game-card").classList.contains("hidden")) {
+                if (!document.getElementById("problem-text").innerText || document.getElementById("problem-text").innerText === "Загрузка...") {
+                    generateProblem();
+                }
+            }
+        });
+    }
+
+    window.handleLogin = async function(event) {
+        event.preventDefault();
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+        const errEl = document.getElementById("auth-error");
+        const btn = document.getElementById("login-submit-btn");
+
+        errEl.innerText = "";
+        btn.disabled = true;
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+            errEl.innerText = "Неверный логин или пароль. Проверьте данные аккаунта.";
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.handleLogout = async function() {
+        await signOut(auth);
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        const authCard = document.getElementById("auth-card");
+        const entryCard = document.getElementById("entry-card");
+        const gameCard = document.getElementById("game-card");
+
+        if (user) {
+            authCard.classList.add("hidden");
+            document.getElementById("auth-user-email").innerText = user.email || user.uid;
+            document.getElementById("game-user-email").innerText = user.email || user.uid;
+
+            await ensureStateExists();
+            await subscribePlayerState(user);
+
+            if (selectedLeague && selectedClass && LEAGUES[selectedLeague]?.classes.includes(selectedClass)) {
+                openGameView();
+            } else {
+                entryCard.classList.remove("hidden");
+                gameCard.classList.add("hidden");
+            }
+        } else {
+            if (unsubPlayerDoc) {
+                unsubPlayerDoc();
+                unsubPlayerDoc = null;
+            }
+            playerDocRef = null;
+            elixir = 0;
+            errorsToday = 0;
+            buildElixirBar();
+
+            authCard.classList.remove("hidden");
+            entryCard.classList.add("hidden");
+            gameCard.classList.add("hidden");
+        }
+    });
+
+    window.setBillboardMode = function(mode) {
+        billboardMode = mode;
+        document.getElementById("mode-single-btn").classList.toggle("active", mode === "single");
+        document.getElementById("mode-all-btn").classList.toggle("active", mode === "all");
+        document.getElementById("single-league-tabs").classList.toggle("hidden", mode !== "single");
+        document.getElementById("leaderboard").classList.toggle("hidden", mode !== "single");
+        document.getElementById("all-leagues-board").classList.toggle("hidden", mode !== "all");
+        renderBillboard();
+    };
+
+    window.switchBoardLeague = function(leagueKey) {
+        boardLeague = leagueKey;
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.league === leagueKey);
+        });
+        renderBillboard();
+    };
+
+    function renderLeagueRowsHtml(leagueKey) {
+        const cfg = LEAGUES[leagueKey];
+        const leagueData = liveState?.[leagueKey] || {};
+
+        const rows = cfg.classes
+            .map(cls => ({
+                cls,
+                score: Number(leagueData[cls]?.score || 0),
+                shields: Number(leagueData[cls]?.shields || 0)
+            }))
+            .sort((a, b) => b.score - a.score);
+
+        return rows.map((item, idx) => {
+            const place = idx + 1;
+            let medalHtml = "";
+            let placeClass = "";
+
+            if (place === 1) {
+                placeClass = "place-1";
+                medalHtml = `<span class="badge badge-gold">1 • Золото</span>`;
+            } else if (place === 2) {
+                placeClass = "place-2";
+                medalHtml = `<span class="badge badge-silver">2 • Серебро</span>`;
+            } else if (place === 3 && cfg.prizesCount >= 3) {
+                placeClass = "place-3";
+                medalHtml = `<span class="badge badge-bronze">3 • Бронза</span>`;
+            }
+
+            const shieldHtml = item.shields > 0
+                ? `<span class="badge badge-shield">Щит: ${item.shields}</span>`
+                : "";
+
+            return `
+                <div class="team-row ${placeClass}">
+                    <div>
+                        <strong>${place}. ${item.cls}</strong>
+                        ${medalHtml}
+                        ${shieldHtml}
+                    </div>
+                    <div class="score-val">${item.score}</div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    function renderBillboard() {
+        const singleEl = document.getElementById("leaderboard");
+        const allEl = document.getElementById("all-leagues-board");
+
+        if (!liveState) {
+            singleEl.innerHTML = `<div style="color:var(--muted);">Загрузка билборда...</div>`;
+            allEl.innerHTML = `<div style="color:var(--muted);">Загрузка билборда...</div>`;
+            return;
+        }
+
+        if (billboardMode === "single") {
+            singleEl.innerHTML = renderLeagueRowsHtml(boardLeague);
+        } else {
+            allEl.innerHTML = Object.entries(LEAGUES).map(([key, cfg]) => `
+                <div class="league-column">
+                    <div class="league-col-header">
+                        ${EMBLEMS[key] || ""}
+                        <span>${cfg.title}</span>
+                    </div>
+                    <div class="leaderboard">${renderLeagueRowsHtml(key)}</div>
+                </div>
+            `).join("");
+        }
+    }
+
+    window.chooseLeague = function(leagueKey) {
+        selectedLeague = leagueKey;
+        const box = document.getElementById("class-select-buttons");
+        box.classList.remove("hidden");
+        box.innerHTML = LEAGUES[leagueKey].classes
+            .map(cls => `<button class="btn btn-gold" onclick="chooseClass('${leagueKey}', '${cls}')">${cls}</button>`)
+            .join("");
+    };
+
+    window.chooseClass = function(leagueKey, cls) {
+        selectedLeague = leagueKey;
+        selectedClass = cls;
+        localStorage.setItem("mr_league", leagueKey);
+        localStorage.setItem("mr_class", cls);
+        openGameView();
+    };
+
+    window.resetPlayerChoice = function() {
+        selectedClass = null;
+        localStorage.removeItem("mr_class");
+        document.getElementById("game-card").classList.add("hidden");
+        document.getElementById("entry-card").classList.remove("hidden");
+        document.getElementById("class-select-buttons").classList.add("hidden");
+    };
+
+    function openGameView() {
+        if (!currentUser) return;
+        document.getElementById("entry-card").classList.add("hidden");
+        document.getElementById("game-card").classList.remove("hidden");
+        document.getElementById("player-badge").innerHTML = `
+            ${EMBLEMS[selectedLeague] || ""}
+            <span>${LEAGUES[selectedLeague].title} • ${selectedClass}</span>
+        `;
+        switchBoardLeague(selectedLeague);
+        renderTargets();
+        generateProblem();
+        updateControlsState();
+    }
+
+    function renderTargets() {
+        const select = document.getElementById("target-select");
+        if (!selectedLeague) return;
+        const opponents = LEAGUES[selectedLeague].classes.filter(c => c !== selectedClass);
+        select.innerHTML = opponents.map(op => `<option value="${op}">${op}</option>`).join("");
+    }
+
+    function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateProblem() {
+        if (errorsToday >= 3 || !selectedLeague) return;
+
+        if (selectedLeague === "league_5_7") {
+            const type = randInt(1, 3);
+            if (type === 1) {
+                const a = randInt(15, 85), b = randInt(12, 65);
+                currentAnswer = a + b;
+                document.getElementById("problem-text").innerText = `${a} + ${b} = ?`;
+            } else if (type === 2) {
+                const a = randInt(40, 120), b = randInt(10, 39);
+                currentAnswer = a - b;
+                document.getElementById("problem-text").innerText = `${a} - ${b} = ?`;
+            } else {
+                const a = randInt(3, 12), b = randInt(3, 12);
+                currentAnswer = a * b;
+                document.getElementById("problem-text").innerText = `${a} × ${b} = ?`;
+            }
+        } else if (selectedLeague === "league_8_9") {
+            const type = randInt(1, 3);
+            if (type === 1) {
+                const root = randInt(4, 15);
+                const add = randInt(5, 30);
+                currentAnswer = root + add;
+                document.getElementById("problem-text").innerText = `√${root * root} + ${add} = ?`;
+            } else if (type === 2) {
+                const base = randInt(2, 6);
+                const exp = randInt(2, 4);
+                const sub = randInt(1, 10);
+                currentAnswer = Math.pow(base, exp) - sub;
+                document.getElementById("problem-text").innerText = `${base}^${exp} - ${sub} = ?`;
+            } else {
+                const x = randInt(2, 15);
+                const k = randInt(2, 6);
+                const b = randInt(3, 20);
+                currentAnswer = x;
+                document.getElementById("problem-text").innerText = `${k}x + ${b} = ${k * x + b}; x = ?`;
+            }
+        } else {
+            const type = randInt(1, 3);
+            if (type === 1) {
+                const base = randInt(2, 5);
+                const exp = randInt(3, 5);
+                currentAnswer = exp;
+                document.getElementById("problem-text").innerText = `log_${base}(${Math.pow(base, exp)}) = ?`;
+            } else if (type === 2) {
+                const a1 = randInt(2, 12);
+                const d = randInt(2, 7);
+                const n = randInt(4, 8);
+                currentAnswer = a1 + (n - 1) * d;
+                document.getElementById("problem-text").innerText = `a₁=${a1}, d=${d} → a_${n} = ?`;
+            } else {
+                const x = randInt(3, 12);
+                currentAnswer = x * x - 4;
+                document.getElementById("problem-text").innerText = `f(${x}) при f(t) = t² - 4`;
+            }
+        }
+
+        const input = document.getElementById("answer-input");
+        input.value = "";
+        input.focus();
+    }
+
+    function setLog(msg) {
+        document.getElementById("status-log").innerText = msg;
+    }
+
+    function updateControlsState() {
+        const isBlocked = errorsToday >= 3;
+
+        document.getElementById("elixir-val").innerText = elixir;
+        document.getElementById("errors-val").innerText = errorsToday;
+        buildElixirBar();
+
+        document.getElementById("problem-section").classList.toggle("hidden", isBlocked);
+        document.getElementById("blocked-section").classList.toggle("hidden", !isBlocked);
+
+        const hasTargets = Boolean(document.getElementById("target-select").value);
+        document.getElementById("btn-shield").disabled = !currentUser || elixir < 3;
+        document.getElementById("btn-boost").disabled = !currentUser || elixir < 4;
+        document.getElementById("btn-strike").disabled = !currentUser || elixir < 6 || !hasTargets;
+    }
+
+    window.submitAnswer = async function() {
+        if (!currentUser || !playerDocRef || errorsToday >= 3) return;
+        const input = document.getElementById("answer-input");
+        const val = parseInt(input.value, 10);
+        if (Number.isNaN(val)) return;
+
+        const today = getTodayKey();
+        const activeErrors = errDate === today ? errorsToday : 0;
+
+        if (val === currentAnswer) {
+            const nextElixir = Math.min(10, elixir + 1);
+            elixir = nextElixir;
+            await updateDoc(playerDocRef, {
+                elixir: nextElixir,
+                errDate: today,
+                errorsToday: activeErrors
+            });
+            await updateDoc(tournamentRef, {
+                [`${selectedLeague}.${selectedClass}.score`]: increment(1)
+            });
+            setLog("Точно в цель! +1 балл и +1 эликсир.");
+            updateControlsState();
+            generateProblem();
+        } else {
+            const nextErr = activeErrors + 1;
+            errorsToday = nextErr;
+            errDate = today;
+            await updateDoc(playerDocRef, {
+                errorsToday: nextErr,
+                errDate: today
+            });
+            updateControlsState();
+
+            if (nextErr >= 3) {
+                setLog("3-я ошибка за день зафиксирована в аккаунте — новые примеры закрыты до завтра.");
+            } else {
+                setLog(`Мимо! Правильный ответ: ${currentAnswer}. Осталось попыток сегодня: ${3 - nextErr}.`);
+                generateProblem();
+            }
+        }
+    };
+
+    window.castShield = async function() {
+        if (!currentUser || !playerDocRef || elixir < 3) return;
+        const nextElixir = elixir - 3;
+        elixir = nextElixir;
+        await updateDoc(playerDocRef, { elixir: nextElixir });
+        await updateDoc(tournamentRef, {
+            [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
+        });
+        setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
+        updateControlsState();
+    };
+
+    window.castBoost = async function() {
+        if (!currentUser || !playerDocRef || elixir < 4) return;
+        const nextElixir = elixir - 4;
+        elixir = nextElixir;
+        await updateDoc(playerDocRef, { elixir: nextElixir });
+        await updateDoc(tournamentRef, {
+            [`${selectedLeague}.${selectedClass}.score`]: increment(3)
+        });
+        setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
+        updateControlsState();
+    };
+
+    window.castStrike = async function() {
+        const targetClass = document.getElementById("target-select").value;
+        if (!currentUser || !playerDocRef || elixir < 6 || !targetClass || !liveState?.[selectedLeague]?.[targetClass]) return;
+
+        const nextElixir = elixir - 6;
+        elixir = nextElixir;
+        await updateDoc(playerDocRef, { elixir: nextElixir });
+
+        const targetData = liveState[selectedLeague][targetClass];
+        const targetShields = Number(targetData.shields || 0);
+        const targetScore = Number(targetData.score || 0);
+
+        if (targetShields > 0) {
+            await updateDoc(tournamentRef, {
+                [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
+            });
+            setLog(`Огненный шар по «${targetClass}» отражён щитом!`);
+        } else {
+            const nextScore = Math.max(0, targetScore - 2);
+            await updateDoc(tournamentRef, {
+                [`${selectedLeague}.${targetClass}.score`]: nextScore
+            });
+            setLog(`Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`);
+        }
+
+        updateControlsState();
+    };
+
+    document.getElementById("answer-input").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitAnswer();
+    });
+
+    renderTabEmblems();
+    buildElixirBar();
+</script>
+</body>
+</html>
