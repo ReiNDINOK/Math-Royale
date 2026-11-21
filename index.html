@@ -493,7 +493,10 @@
             align-items: center;
             width: 100%;
         }
-        .password-field input {
+        .password-field input[type="password"],
+        .password-field input[type="text"] {
+            flex: 1 1 0%;
+            min-width: 0;
             width: 100%;
             margin-bottom: 0;
             padding-right: 44px;
@@ -1713,12 +1716,14 @@
         if (btn) btn.disabled = true;
         try {
             const today = getTodayKey();
-            const q = queryLike = collection(db, "playerStates");
-            const snap = await getDocs(q);
+            const colRef = collection(db, "playerStates");
+            const snap = await getDocs(colRef);
             let updatedCount = 0;
+            let totalDocs = 0;
             const batch = writeBatch(db);
 
             snap.forEach((docSnap) => {
+                totalDocs++;
                 const data = docSnap.data() || {};
                 let playerLeague = data.league;
                 if (!playerLeague && data.email) {
@@ -1726,10 +1731,10 @@
                     if (resolved) playerLeague = resolved.league;
                 }
                 if (playerLeague === leagueKey) {
-                    batch.update(docSnap.ref, {
+                    batch.set(docSnap.ref, {
                         errorsToday: 0,
                         errDate: today
-                    });
+                    }, { merge: true });
                     updatedCount++;
                 }
             });
@@ -1738,11 +1743,16 @@
                 await batch.commit();
                 setAdminLog(`Счётчик ошибок (0/3) сброшен для лиги «${leagueTitle}» (обновлено профилей: ${updatedCount}).`);
             } else {
-                setAdminLog(`В лиге «${leagueTitle}» не найдено профилей игроков в playerStates.`, true);
+                setAdminLog(`В лиге «${leagueTitle}» не найдено профилей в playerStates (всего документов: ${totalDocs}).`, true);
             }
         } catch (err) {
+            const code = formatErrorCode(err, "firestore");
             showError("Сброс ошибок лиги", err);
-            setAdminLog("Не удалось сбросить счётчик ошибок лиги.", true);
+            if (code.includes("permission-denied")) {
+                setAdminLog("Нет прав Firestore на чтение/обновление коллекции playerStates (проверьте Firestore Rules для admin).", true);
+            } else {
+                setAdminLog(`Не удалось сбросить счётчик ошибок лиги (${code}).`, true);
+            }
         } finally {
             if (btn) btn.disabled = false;
         }
@@ -2434,7 +2444,7 @@
         togglePasswordBtn.addEventListener("click", () => {
             const showPlain = passwordInput.type === "password";
             passwordInput.type = showPlain ? "text" : "password";
-            togglePasswordBtn.textContent = showPlain ? "🙈" : "👁";
+            togglePasswordBtn.textContent = showPlain ? "👁‍🗨" : "👁";
             togglePasswordBtn.title = showPlain ? "Скрыть пароль" : "Показать пароль";
             togglePasswordBtn.setAttribute("aria-label", showPlain ? "Скрыть пароль" : "Показать пароль");
         });
