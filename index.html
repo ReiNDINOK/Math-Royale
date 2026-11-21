@@ -847,7 +847,7 @@
         league_5_7: {
             title: "5–7 классы",
             prizesCount: 3,
-            classes: ["5", "6", "7", "Сергей", "Лина", "Катя"]
+            classes: ["5", "6", "7", "Сергей", "Лина", "Катя", "Олег"]
         },
         league_8_9: {
             title: "8 и 9А/9Б",
@@ -862,11 +862,12 @@
     };
 
     // Карта соответствия кодов в email (до @) -> лига и команда
-    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, sergey@math.local и т.п.
+    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, sergey@math.local, oleg@math.local и т.п.
     const EMAIL_TEAM_TOKENS = [
         { token: "sergey", league: "league_5_7", team: "Сергей" },
         { token: "lina",   league: "league_5_7", team: "Лина" },
         { token: "katya",  league: "league_5_7", team: "Катя" },
+        { token: "oleg",   league: "league_5_7", team: "Олег" },
         { token: "10",     league: "league_10_11", team: "10" },
         { token: "11",     league: "league_10_11", team: "11" },
         { token: "9a",     league: "league_8_9", team: "9А" },
@@ -882,7 +883,7 @@
     function resolveAssignmentFromEmail(email) {
         if (!email) return null;
         const localPart = String(email).toLowerCase().split("@")[0] || "";
-        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sergey
+        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sergey, oleg
         const parts = localPart.split(/[._-]+/).filter(Boolean);
 
         // Проверяем с конца (обычно класс указывают в конце: ivanov.5, smirnova.9b), затем по всем сегментам
@@ -942,7 +943,7 @@
         if (code.includes("failed-precondition")) return "Конфликт условий операции. Попробуйте ещё раз.";
         if (code.includes("not-found")) return "Документ mathRoyale/leaguesState не найден в Firestore.";
         if (code.includes("unauthenticated")) return "Пользователь не авторизован. Войдите заново.";
-        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local, petrov.9b@math.local или sergey@math.local.";
+        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local, petrov.9b@math.local, sergey@math.local или oleg@math.local.";
         return "";
     }
 
