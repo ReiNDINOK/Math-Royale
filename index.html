@@ -235,6 +235,16 @@
             font-weight: 800;
         }
 
+        .locked-pill {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #93c5fd;
+            background: rgba(56, 189, 248, 0.14);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
         .leaderboard {
             display: flex;
             flex-direction: column;
@@ -334,7 +344,6 @@
             border-bottom-color: #7f1d1d;
         }
 
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
         .cards-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
         /* Форма входа */
@@ -374,16 +383,6 @@
             color: #fde68a;
             font-weight: 800;
             word-break: break-all;
-        }
-
-        .entry-hint {
-            margin: 0 0 12px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            background: rgba(56, 189, 248, 0.1);
-            border: 1px solid rgba(56, 189, 248, 0.35);
-            color: #bae6fd;
-            font-size: 0.85rem;
         }
 
         /* Шкала эликсира и ошибки */
@@ -670,11 +669,11 @@
     <div class="card" id="auth-card">
         <h2 style="margin:0 0 8px; font-size:1.2rem; font-weight:800; text-align:center;">Вход в аккаунт участника</h2>
         <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem; text-align:center;">
-            Ошибки за день привязываются к вашему аккаунту в Firestore.
+            Лига и класс привязаны к вашему логину. Ошибки за день сохраняются в Firestore.
         </p>
 
         <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
-            <input type="email" id="login-email" placeholder="Логин (например, sergey@math.local)" required autocomplete="username">
+            <input type="email" id="login-email" placeholder="Логин (например, ivanov.5@math.local)" required autocomplete="username">
             <input type="password" id="login-password" placeholder="Пароль" required autocomplete="current-password">
             <button type="submit" class="btn btn-gold" id="login-submit-btn">Войти на арену</button>
             <div class="auth-error" id="auth-error"></div>
@@ -686,23 +685,6 @@
         Загружаем профиль игрока…
     </div>
 
-    <!-- Выбор лиги и класса (после входа) -->
-    <div class="card hidden" id="entry-card">
-        <div class="account-bar">
-            <div>Аккаунт: <span class="account-email" id="auth-user-email"></span></div>
-            <button class="btn btn-slate" style="width:auto; padding:5px 10px; font-size:0.78rem;" onclick="handleLogout()">Выйти</button>
-        </div>
-
-        <h2 style="margin:0 0 10px; font-size:1.15rem; font-weight:800;">Выбор лиги и участника / класса</h2>
-        <p class="entry-hint" id="entry-hint">Выберите лигу, а затем класс или участника, за которого вы играете.</p>
-        <div class="grid-2" id="league-select-buttons">
-            <button class="btn btn-slate" onclick="chooseLeague('league_5_7')">Лига 5–7 (+ тест)</button>
-            <button class="btn btn-slate" onclick="chooseLeague('league_8_9')">Лига 8, 9А/9Б</button>
-            <button class="btn btn-slate" onclick="chooseLeague('league_10_11')">Лига 10–11</button>
-        </div>
-        <div id="class-select-buttons" class="grid-2 hidden" style="margin-top:12px;"></div>
-    </div>
-
     <!-- Игровой экран -->
     <div class="card hidden" id="game-card">
         <div class="account-bar">
@@ -710,9 +692,9 @@
             <button class="btn btn-slate" style="width:auto; padding:5px 10px; font-size:0.78rem;" onclick="handleLogout()">Выйти</button>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
             <div class="player-league-badge" id="player-badge"></div>
-            <button class="btn btn-slate" style="width:auto; padding:7px 12px; font-size:0.8rem;" onclick="resetPlayerChoice()">Сменить лигу / класс</button>
+            <span class="locked-pill">Закреплено за аккаунтом</span>
         </div>
 
         <div class="hud-top">
@@ -850,7 +832,7 @@
         league_5_7: {
             title: "5–7 классы",
             prizesCount: 3,
-            classes: ["5А", "6А", "7А", "Сергей", "Лина", "Катя"]
+            classes: ["5", "6", "7", "Сергей", "Лина", "Катя"]
         },
         league_8_9: {
             title: "8 и 9А/9Б",
@@ -864,6 +846,41 @@
         }
     };
 
+    // Карта соответствия кодов в email (до @) -> лига и команда
+    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, sergey@math.local и т.п.
+    const EMAIL_TEAM_TOKENS = [
+        { token: "sergey", league: "league_5_7", team: "Сергей" },
+        { token: "lina",   league: "league_5_7", team: "Лина" },
+        { token: "katya",  league: "league_5_7", team: "Катя" },
+        { token: "10",     league: "league_10_11", team: "10" },
+        { token: "11",     league: "league_10_11", team: "11" },
+        { token: "9a",     league: "league_8_9", team: "9А" },
+        { token: "9а",     league: "league_8_9", team: "9А" },
+        { token: "9b",     league: "league_8_9", team: "9Б" },
+        { token: "9б",     league: "league_8_9", team: "9Б" },
+        { token: "8",      league: "league_8_9", team: "8" },
+        { token: "5",      league: "league_5_7", team: "5" },
+        { token: "6",      league: "league_5_7", team: "6" },
+        { token: "7",      league: "league_5_7", team: "7" }
+    ];
+
+    function resolveAssignmentFromEmail(email) {
+        if (!email) return null;
+        const localPart = String(email).toLowerCase().split("@")[0] || "";
+        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sergey
+        const parts = localPart.split(/[._-]+/).filter(Boolean);
+
+        // Проверяем с конца (обычно класс указывают в конце: ivanov.5, smirnova.9b), затем по всем сегментам
+        const orderedSegments = [...parts].reverse();
+        for (const seg of orderedSegments) {
+            const match = EMAIL_TEAM_TOKENS.find(item => item.token === seg);
+            if (match) {
+                return { league: match.league, team: match.team };
+            }
+        }
+        return null;
+    }
+
     const MAX_ERRORS = 3;
     const MAX_ELIXIR = 10;
 
@@ -875,9 +892,9 @@
     let currentUser = null;
     let playerDocRef = null;
     let unsubPlayerDoc = null;
-    let sessionToken = 0;      // защита от гонок при быстрой смене пользователя
-    let playerReady = false;   // состояние игрока загружено из Firestore
-    let busy = false;          // идёт запись в Firestore
+    let sessionToken = 0;
+    let playerReady = false;
+    let busy = false;
 
     let liveState = null;
     let billboardMode = "single";
@@ -885,7 +902,6 @@
     let selectedLeague = null;
     let selectedClass = null;
 
-    // Состояние игрока в Firestore (playerStates/{uid})
     let elixir = 0;
     let errorsToday = 0;
     let errDate = "";
@@ -905,8 +921,9 @@
         if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found") || code.includes("invalid-email")) return "Неверный логин или пароль.";
         if (code.includes("too-many-requests")) return "Слишком много попыток входа. Подождите и повторите.";
         if (code.includes("failed-precondition")) return "Конфликт условий операции. Попробуйте ещё раз.";
-        if (code.includes("not-found")) return "Документ не найден в Firestore.";
+        if (code.includes("not-found")) return "Документ mathRoyale/leaguesState не найден в Firestore.";
         if (code.includes("unauthenticated")) return "Пользователь не авторизован. Войдите заново.";
+        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local, petrov.9b@math.local или sergey@math.local.";
         return "";
     }
 
@@ -991,23 +1008,6 @@
         return state;
     }
 
-    function choiceKey(name) {
-        return `mr_${name}_${currentUser ? currentUser.uid : "guest"}`;
-    }
-
-    function loadSavedChoice() {
-        selectedLeague = null;
-        selectedClass = null;
-        try {
-            const l = localStorage.getItem(choiceKey("league"));
-            const c = localStorage.getItem(choiceKey("class"));
-            if (l && c && LEAGUES[l] && LEAGUES[l].classes.includes(c)) {
-                selectedLeague = l;
-                selectedClass = c;
-            }
-        } catch (e) { /* localStorage недоступен — просто выбираем заново */ }
-    }
-
     /* ---------- Билборд (общий документ) ---------- */
 
     async function ensureStateExists() {
@@ -1037,7 +1037,6 @@
                 await updateDoc(tournamentRef, updates);
             }
         } catch (err) {
-            // Не критично для входа: билборд мог уже существовать, а записать структуру нельзя
             showError("Инициализация mathRoyale/leaguesState", err);
         }
     }
@@ -1062,7 +1061,7 @@
         errorsToday = errDate === today ? Math.max(0, Number(d.errorsToday || 0)) : 0;
     }
 
-    async function loadPlayerState(user) {
+    async function loadPlayerState(user, assignment) {
         if (unsubPlayerDoc) {
             unsubPlayerDoc();
             unsubPlayerDoc = null;
@@ -1074,25 +1073,38 @@
         const snap = await getDoc(playerDocRef);
         let data;
         if (!snap.exists()) {
-            data = { email: user.email || "", elixir: 0, errorsToday: 0, errDate: today };
+            data = {
+                email: user.email || "",
+                league: assignment.league,
+                team: assignment.team,
+                elixir: 0,
+                errorsToday: 0,
+                errDate: today
+            };
             await setDoc(playerDocRef, data);
         } else {
             data = snap.data();
+            const patch = {};
             if (data.errDate !== today) {
-                await updateDoc(playerDocRef, { errorsToday: 0, errDate: today });
-                data = { ...data, errorsToday: 0, errDate: today };
+                patch.errorsToday = 0;
+                patch.errDate = today;
+            }
+            if (data.league !== assignment.league) patch.league = assignment.league;
+            if (data.team !== assignment.team) patch.team = assignment.team;
+
+            if (Object.keys(patch).length > 0) {
+                await updateDoc(playerDocRef, patch);
+                data = { ...data, ...patch };
             }
         }
         applyPlayerData(data);
         playerReady = true;
         updateControlsState();
 
-        // Живая подписка включается только после успешной первичной загрузки
         unsubPlayerDoc = onSnapshot(playerDocRef, (docSnap) => {
             if (!docSnap.exists()) return;
             applyPlayerData(docSnap.data());
             updateControlsState();
-            // Пример создаётся здесь только если игра открыта, лимит не исчерпан и примера ещё нет
             if (isGameVisible() && errorsToday < MAX_ERRORS && currentAnswer === null) {
                 generateProblem();
             }
@@ -1139,30 +1151,35 @@
     async function initSession(user) {
         const myToken = ++sessionToken;
         hide("auth-card");
-        hide("entry-card");
         hide("game-card");
         show("loading-card");
-        document.getElementById("auth-user-email").innerText = user.email || user.uid;
         document.getElementById("game-user-email").innerText = user.email || user.uid;
         currentAnswer = null;
 
+        const assignment = resolveAssignmentFromEmail(user.email);
+        if (!assignment) {
+            hide("loading-card");
+            showError(
+                "Определение класса по логину",
+                { code: "auth/invalid-team-email", message: `Логин «${user.email || ""}» не содержит распознанный класс или имя участника.` },
+                "auth",
+                true
+            );
+            return;
+        }
+
+        selectedLeague = assignment.league;
+        selectedClass = assignment.team;
+
         try {
-            // 1) playerStates/{uid}: загрузка/создание + проверка errDate и errorsToday
-            await loadPlayerState(user);
+            await loadPlayerState(user, assignment);
             if (myToken !== sessionToken) return;
 
-            // 2) Общий документ билборда (ошибки показываются, но вход не блокируют)
             await ensureStateExists();
             if (myToken !== sessionToken) return;
 
-            // 3) Выбор лиги/класса (если не сохранён) → 4) game-card → 5) пример
             hide("loading-card");
-            loadSavedChoice();
-            if (selectedLeague && selectedClass) {
-                openGameView();
-            } else {
-                showEntryView(true);
-            }
+            openGameView();
         } catch (err) {
             if (myToken !== sessionToken) return;
             hide("loading-card");
@@ -1201,7 +1218,6 @@
 
             show("auth-card");
             hide("loading-card");
-            hide("entry-card");
             hide("game-card");
         }
     });
@@ -1245,13 +1261,13 @@
 
             if (place === 1) {
                 placeClass = "place-1";
-                medalHtml = `<span class="badge badge-gold">1 • Золото</span>`;
+                medalHtml = `<span class="badge badge-gold">Золото</span>`;
             } else if (place === 2) {
                 placeClass = "place-2";
-                medalHtml = `<span class="badge badge-silver">2 • Серебро</span>`;
+                medalHtml = `<span class="badge badge-silver">Серебро</span>`;
             } else if (place === 3 && cfg.prizesCount >= 3) {
                 placeClass = "place-3";
-                medalHtml = `<span class="badge badge-bronze">3 • Бронза</span>`;
+                medalHtml = `<span class="badge badge-bronze">Бронза</span>`;
             }
 
             const shieldHtml = item.shields > 0
@@ -1296,53 +1312,8 @@
         }
     }
 
-    /* ---------- Выбор лиги и класса ---------- */
-
-    function showEntryView(isFirstTime) {
-        hide("game-card");
-        hide("loading-card");
-        show("entry-card");
-        hide("class-select-buttons");
-        document.getElementById("entry-hint").innerText = isFirstTime
-            ? "Для этого аккаунта команда ещё не выбрана. Выберите лигу, а затем класс или участника."
-            : "Выберите другую лигу и класс или участника. Эликсир и ошибки за день сохраняются в аккаунте.";
-    }
-
-    window.chooseLeague = function(leagueKey) {
-        const box = document.getElementById("class-select-buttons");
-        box.classList.remove("hidden");
-        box.innerHTML = LEAGUES[leagueKey].classes
-            .map(cls => `<button class="btn btn-gold" onclick="chooseClass('${leagueKey}', '${cls}')">${cls}</button>`)
-            .join("");
-    };
-
-    window.chooseClass = function(leagueKey, cls) {
-        if (!LEAGUES[leagueKey] || !LEAGUES[leagueKey].classes.includes(cls)) return;
-        selectedLeague = leagueKey;
-        selectedClass = cls;
-        try {
-            localStorage.setItem(choiceKey("league"), leagueKey);
-            localStorage.setItem(choiceKey("class"), cls);
-        } catch (e) { /* не критично */ }
-        currentAnswer = null;
-        openGameView();
-    };
-
-    window.resetPlayerChoice = function() {
-        selectedLeague = null;
-        selectedClass = null;
-        currentAnswer = null;
-        try {
-            localStorage.removeItem(choiceKey("league"));
-            localStorage.removeItem(choiceKey("class"));
-        } catch (e) { /* не критично */ }
-        setLog("");
-        showEntryView(false);
-    };
-
     function openGameView() {
         if (!currentUser || !playerReady || !selectedLeague || !selectedClass) return;
-        hide("entry-card");
         hide("loading-card");
         show("game-card");
         document.getElementById("player-badge").innerHTML = `
@@ -1352,7 +1323,6 @@
         switchBoardLeague(selectedLeague);
         renderTargets();
         updateControlsState();
-        // Пример генерируется строго при errorsToday < 3 (данные игрока уже загружены)
         if (errorsToday < MAX_ERRORS) {
             generateProblem();
         }
@@ -1464,8 +1434,6 @@
     }
 
     /* ---------- Игровые действия ---------- */
-    // Локальное состояние (elixir/errorsToday) НЕ меняется вручную: оно приходит из onSnapshot
-    // после подтверждения записи. Связанные записи в двух документах идут одним атомарным batch/transaction.
 
     window.submitAnswer = async function() {
         if (!canAct() || errorsToday >= MAX_ERRORS || currentAnswer === null) return;
@@ -1559,7 +1527,6 @@
 
         setBusy(true);
         try {
-            // Транзакция: актуальные щиты/баллы цели и эликсир игрока читаются с сервера
             const resultMsg = await runTransaction(db, async (tx) => {
                 const playerSnap = await tx.get(playerDocRef);
                 const tourSnap = await tx.get(tournamentRef);
