@@ -59,6 +59,16 @@
             box-shadow: 0 12px 0 #070b14, 0 18px 30px rgba(0, 0, 0, 0.55);
         }
 
+        .billboard-status {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; flex-wrap: wrap; margin: 0 0 14px; padding: 10px 12px;
+            border: 1px solid var(--border-light); border-radius: 10px;
+            background: rgba(148, 163, 184, 0.07); color: var(--muted);
+            font-size: 0.84rem; line-height: 1.5;
+        }
+        .billboard-status .btn { width: auto; padding: 7px 14px; font-size: 0.82rem; }
+        .billboard-status-text { flex: 1; min-width: 180px; }
+
         /* Баннер ошибок Firebase */
         .error-banner {
             background: rgba(239, 68, 68, 0.16);
@@ -646,6 +656,11 @@
             </div>
         </div>
 
+        <div class="billboard-status" id="billboard-status">
+            <span class="billboard-status-text" id="billboard-status-text" role="status" aria-live="polite">Загружаем рейтинг…</span>
+            <button type="button" class="btn btn-slate" id="billboard-refresh" onclick="refreshBillboard()" aria-controls="leaderboard all-leagues-board">Обновить</button>
+        </div>
+
         <div class="tabs" id="single-league-tabs">
             <button class="tab-btn active" data-league="league_5_7" onclick="switchBoardLeague('league_5_7')">
                 <span class="emblem-slot" data-emblem="league_5_7"></span>
@@ -897,6 +912,10 @@
     let busy = false;
 
     let liveState = null;
+    let unsubBillboard = null;
+    let billboardGeneration = 0;
+    let billboardWaitTimer = null;
+    let billboardFromCache = true;
     let billboardMode = "single";
     let boardLeague = "league_5_7";
     let selectedLeague = null;
@@ -1037,19 +1056,87 @@
                 await updateDoc(tournamentRef, updates);
             }
         } catch (err) {
-            showError("Инициализация mathRoyale/leaguesState", err);
+            console.warn("[Инициализация билборда]", err);
+            setBillboardStatus(liveState
+                ? "Показываем последние полученные результаты. Обновление пока недоступно."
+                : "Рейтинг пока недоступен. Попробуйте обновить его чуть позже.");
         }
     }
 
-    onSnapshot(tournamentRef, (snap) => {
-        liveState = snap.exists() ? snap.data() : buildDefaultState();
+    function setBillboardStatus(message) {
+        document.getElementById("billboard-status-text").textContent = message;
+    }
+
+    function clearBillboardWait() {
+        clearTimeout(billboardWaitTimer);
+        billboardWaitTimer = null;
+    }
+
+    function startBillboardSubscription() {
+        // Ignore queued callbacks belonging to a subscription that was replaced.
+        const generation = ++billboardGeneration;
+        clearBillboardWait();
+        if (unsubBillboard) {
+            unsubBillboard();
+            unsubBillboard = null;
+        }
+        document.getElementById("billboard-card").setAttribute("aria-busy", "true");
+        setBillboardStatus(navigator.onLine === false
+            ? "Нет подключения. Рейтинг обновится после восстановления связи."
+            : liveState ? "Обновляем рейтинг. Последние результаты остаются на экране."
+                : "Загружаем рейтинг…");
         renderBillboard();
-        updateControlsState();
-    }, (err) => {
-        showError("Чтение билборда mathRoyale/leaguesState", err);
-        const msg = `<div style="color:#fca5a5;">Не удалось загрузить билборд (см. ошибку выше).</div>`;
-        document.getElementById("leaderboard").innerHTML = msg;
-        document.getElementById("all-leagues-board").innerHTML = msg;
+        billboardWaitTimer = setTimeout(() => {
+            if (generation !== billboardGeneration) return;
+            document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+            setBillboardStatus(liveState
+                ? "Показываем последние полученные результаты. Можно повторить обновление."
+                : "Загрузка занимает больше времени. Проверьте связь или нажмите «Обновить».");
+        }, 8000);
+
+        const handleError = (err) => {
+            if (generation !== billboardGeneration) return;
+            clearBillboardWait();
+            document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+            console.warn("[Чтение билборда]", err);
+            setBillboardStatus(liveState
+                ? "Показываем последние полученные результаты. Нажмите «Обновить», чтобы повторить."
+                : "Рейтинг пока недоступен. Нажмите «Обновить», чтобы повторить.");
+        };
+        try {
+            unsubBillboard = onSnapshot(tournamentRef, { includeMetadataChanges: true }, (snap) => {
+                if (generation !== billboardGeneration) return;
+                billboardFromCache = snap.metadata.fromCache;
+                // An empty cache is not a confirmed empty tournament.
+                if (snap.exists()) liveState = snap.data();
+                if (!snap.exists() && !billboardFromCache) liveState = null;
+                renderBillboard();
+                updateControlsState();
+                if (!billboardFromCache) {
+                    clearBillboardWait();
+                    document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+                    setBillboardStatus(snap.exists()
+                        ? "Рейтинг обновлён. Результаты обновляются автоматически."
+                        : "Рейтинг ещё не создан. Он появится после инициализации игры участником.");
+                } else {
+                    setBillboardStatus(liveState
+                        ? "Показываем сохранённые результаты. Ожидаем связь с сервером."
+                        : "Ожидаем загрузку рейтинга. Можно повторить запрос кнопкой «Обновить».");
+                }
+            }, handleError);
+        } catch (err) {
+            handleError(err);
+        }
+    }
+
+    window.refreshBillboard = startBillboardSubscription;
+    window.addEventListener("online", startBillboardSubscription);
+    window.addEventListener("offline", () => {
+        clearBillboardWait();
+        document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+        setBillboardStatus(liveState
+            ? "Нет подключения. Показываем последние полученные результаты."
+            : "Нет подключения. Подключитесь к интернету и нажмите «Обновить».");
     });
 
     /* ---------- Состояние игрока (playerStates/{uid}) ---------- */
@@ -1292,8 +1379,8 @@
         const allEl = document.getElementById("all-leagues-board");
 
         if (!liveState) {
-            singleEl.innerHTML = `<div style="color:var(--muted);">Загрузка билборда...</div>`;
-            allEl.innerHTML = `<div style="color:var(--muted);">Загрузка билборда...</div>`;
+            singleEl.innerHTML = `<div style="color:var(--muted);">Здесь появятся результаты лиги после загрузки.</div>`;
+            allEl.innerHTML = `<div style="color:var(--muted);">Здесь появятся результаты лиги после загрузки.</div>`;
             return;
         }
 
@@ -1568,6 +1655,7 @@
 
     renderTabEmblems();
     buildElixirBar();
+    startBillboardSubscription();
 </script>
 </body>
 </html>
