@@ -624,7 +624,7 @@
             .hud-top { grid-template-columns: 1fr; }
             .lives-box { text-align: left; }
         }
-    </style>
+    .header-banner{position:relative;padding-left:58px;padding-right:58px}.rules-trigger{position:absolute;top:12px;left:12px;min-width:44px;min-height:44px;font-size:25px;border-radius:12px;border:1px solid #a58b54;background:#443725;cursor:pointer}.rules-dialog{color:#f8fafc;background:#182235;border:2px solid #ab925c;border-radius:18px;width:min(560px,calc(100% - 28px));max-height:85vh;overflow:auto;padding:22px}.rules-dialog::backdrop{background:#000b}.rules-dialog li{margin:12px 0;line-height:1.5}.rules-close{float:right;min-height:44px;cursor:pointer}.card-theft{background:linear-gradient(145deg,#e5e7eb,#aab1bc)!important;color:#17202e;border-color:#f1f5f9!important}.card-theft .card-desc{color:#273446}.card-justice{background:linear-gradient(145deg,#785333,#382519)!important;border-color:#b4865b!important}.card-justice .card-desc{color:#f4dfc5}.art-theft{background:#ffffff35}.art-justice{background:#20120855}.btn-theft{background:#f1f5f9;color:#17202e}.btn-justice{background:#bd8859;color:#181009}.badge-justice{background:#785333;color:#ffe3bb}.badge svg{width:16px;height:16px;vertical-align:middle}.rules-trigger:focus-visible,.rules-close:focus-visible{outline:3px solid #facc15}</style>
 </head>
 <body>
 <div class="app">
@@ -645,7 +645,7 @@
     <div class="card" id="billboard-card">
         <div class="header-banner">
             <h1>Math Royale</h1>
-            <p class="subtitle">Предметная неделя • Верный ответ = +1 эликсир и +1 балл • 3 ошибки за день = стоп до завтра</p>
+            <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">📜</button>
         </div>
 
         <div class="billboard-toolbar">
@@ -795,10 +795,12 @@
                     <div class="card-desc">Снимает 1 щит цели, а если щитов нет — 2 балла.</div>
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
+                <div class="game-card card-theft"><div class="card-art art-theft"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M10 27L7 6L26 17M38 17L57 6L54 28" fill="#a8afb8" stroke="#29313c" stroke-width="3"/><ellipse cx="32" cy="35" rx="26" ry="23" fill="#d6dbe1"/><path d="M7 30Q18 21 32 31Q46 21 57 30L52 43Q42 46 32 37Q22 46 12 43Z" fill="#252d38"/><circle cx="21" cy="34" r="4" fill="white"/><circle cx="43" cy="34" r="4" fill="white"/><circle cx="22" cy="34" r="2"/><circle cx="42" cy="34" r="2"/><ellipse cx="32" cy="46" rx="6" ry="4" fill="#252d38"/></svg></div><div class="card-name">Кража · 10 эл.</div><div class="card-desc">Переносит до 2 баллов цели вашей команде. Щит не мешает.</div><button class="btn btn-theft" id="btn-theft" onclick="castTheft()">Украсть баллы</button></div>
+                <div class="game-card card-justice"><div class="card-art art-justice"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><path d="M27 25L48 46" stroke="#f4d2a2" stroke-width="9" stroke-linecap="round"/><path d="M16 11L36 31M12 16L31 35M21 7L40 26" stroke="#a86b39" stroke-width="9" stroke-linecap="round"/><path d="M13 54H48L44 48H17Z" fill="#f4d2a2"/></svg></div><div class="card-name">Правосудие · 5 эл.</div><div class="card-desc">Отражает одну кражу у вашей команды.</div><button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button></div>
             </div>
 
             <div class="strike-target-wrap">
-                <label for="target-select" style="font-size:0.85rem; font-weight:800; color:#fdba74;">Цель удара из вашей лиги:</label>
+                <label for="target-select" style="font-size:0.85rem; font-weight:800; color:#fdba74;">Цель огненного шара или кражи:</label>
                 <select id="target-select"></select>
             </div>
         </div>
@@ -807,6 +809,7 @@
     </div>
 </div>
 
+<dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит — 3 эликсира: отражает один огненный шар.</li><li>Ускорение — 4 эликсира: +3 балла своей команде.</li><li>Огненный шар — 6 эликсира: снимает один щит, а без щита — до 2 баллов цели.</li><li>Кража — 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие — 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки — другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1022,7 +1025,7 @@
         for (const [leagueKey, cfg] of Object.entries(LEAGUES)) {
             state[leagueKey] = {};
             cfg.classes.forEach(cls => {
-                state[leagueKey][cls] = { score: 0, shields: 0 };
+                state[leagueKey][cls] = { score: 0, shields: 0, justice: 0 };
             });
         }
         return state;
@@ -1043,12 +1046,12 @@
                 if (!current[leagueKey]) {
                     updates[leagueKey] = {};
                     cfg.classes.forEach(cls => {
-                        updates[leagueKey][cls] = { score: 0, shields: 0 };
+                        updates[leagueKey][cls] = { score: 0, shields: 0, justice: 0 };
                     });
                 } else {
                     cfg.classes.forEach(cls => {
                         if (!current[leagueKey][cls]) {
-                            updates[`${leagueKey}.${cls}`] = { score: 0, shields: 0 };
+                            updates[`${leagueKey}.${cls}`] = { score: 0, shields: 0, justice: 0 };
                         }
                     });
                 }
@@ -1338,7 +1341,8 @@
             .map(cls => ({
                 cls,
                 score: Number(leagueData[cls]?.score || 0),
-                shields: Number(leagueData[cls]?.shields || 0)
+                shields: Number(leagueData[cls]?.shields || 0),
+                justice: Number(leagueData[cls]?.justice || 0)
             }))
             .sort((a, b) => b.score - a.score);
 
@@ -1359,7 +1363,7 @@
             }
 
             const shieldHtml = item.shields > 0
-                ? `<span class="badge badge-shield">Щит: ${item.shields}</span>`
+                ? `<span class="badge badge-shield" title="Щиты" aria-label="Щиты: ${item.shields}">🛡️ ×${item.shields}</span>`
                 : "";
 
             return `
@@ -1368,6 +1372,7 @@
                         <strong>${place}. ${item.cls}</strong>
                         ${medalHtml}
                         ${shieldHtml}
+                        ${item.justice > 0 ? `<span class="badge badge-justice" title="Правосудие" aria-label="Правосудие: ${item.justice}"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><path d="M27 25L48 46" stroke="#f4d2a2" stroke-width="9" stroke-linecap="round"/><path d="M16 11L36 31M12 16L31 35M21 7L40 26" stroke="#a86b39" stroke-width="9" stroke-linecap="round"/><path d="M13 54H48L44 48H17Z" fill="#f4d2a2"/></svg> ×${item.justice}</span>` : ""}
                     </div>
                     <div class="score-val">${item.score}</div>
                 </div>
@@ -1506,6 +1511,8 @@
 
         const hasTargets = Boolean(document.getElementById("target-select").value);
         const ready = Boolean(currentUser) && playerReady && !busy;
+        document.getElementById("btn-theft").disabled = !ready || elixir < 10 || !hasTargets;
+        document.getElementById("btn-justice").disabled = !ready || elixir < 5;
         document.getElementById("btn-shield").disabled = !ready || elixir < 3;
         document.getElementById("btn-boost").disabled = !ready || elixir < 4;
         document.getElementById("btn-strike").disabled = !ready || elixir < 6 || !hasTargets;
@@ -1607,6 +1614,54 @@
             setBusy(false);
         }
     };
+
+    async function castNewCard(theft) {
+        const target = document.getElementById("target-select").value;
+        const cost = theft ? 10 : 5;
+        if (!canAct() || elixir < cost) return;
+        const league = selectedLeague, team = selectedClass, playerRef = playerDocRef;
+        if (theft && (!LEAGUES[league].classes.includes(target) || target === team)) return;
+        setBusy(true);
+        try {
+            const message = await runTransaction(db, async tx => {
+                const ps = await tx.get(playerRef), ts = await tx.get(tournamentRef);
+                if (!ps.exists() || !ts.exists()) throw new Error("Игровые данные не найдены");
+                const energy = Math.min(MAX_ELIXIR, Math.max(0, Number(ps.data().elixir || 0)));
+                if (energy < cost) throw new Error("Недостаточно эликсира");
+                const own = ts.data()?.[league]?.[team];
+                if (!own) throw new Error("Команда не найдена");
+                const updates = {};
+                let result;
+                if (!theft) {
+                    updates[`${league}.${team}.justice`] = Number(own.justice || 0) + 1;
+                    result = "Правосудие защищает вашу команду от ещё одной кражи. (-5 эликсира)";
+                } else {
+                    const victim = ts.data()?.[league]?.[target];
+                    if (!victim) throw new Error("Цель не найдена");
+                    const protection = Math.max(0, Number(victim.justice || 0));
+                    if (protection > 0) {
+                        updates[`${league}.${target}.justice`] = protection - 1;
+                        result = `Правосудие команды «${target}» отразило кражу. Баллы не изменились. (-10 эликсира)`;
+                    } else {
+                        const score = Math.max(0, Number(victim.score || 0));
+                        const amount = Math.min(2, score);
+                        updates[`${league}.${target}.score`] = score - amount;
+                        updates[`${league}.${team}.score`] = Math.max(0, Number(own.score || 0)) + amount;
+                        result = `Кража: от «${target}» вашей команде передано ${amount} балл(а). (-10 эликсира)`;
+                    }
+                }
+                tx.update(playerRef, { elixir: energy - cost });
+                tx.update(tournamentRef, updates);
+                return result;
+            });
+            setLog(message);
+        } catch (err) {
+            showError(theft ? "Карта «Кража»" : "Карта «Правосудие»", err);
+            setLog("Карта не сработала: эликсир не списан.");
+        } finally { setBusy(false); }
+    }
+    window.castTheft = () => castNewCard(true);
+    window.castJustice = () => castNewCard(false);
 
     window.castStrike = async function() {
         const targetClass = document.getElementById("target-select").value;
