@@ -918,7 +918,7 @@
             <h1>Math Royale</h1>
             
             <div class="countdown-banner hidden" id="countdown-banner" role="timer" aria-live="off">
-                <span class="countdown-label" id="countdown-label">⏳ До финала недели:</span>
+                <span class="countdown-label" id="countdown-label">⏳ До финала события:</span>
                 <span class="countdown-clock" id="countdown-clock">--д --:--:--</span>
             </div>
         </div>
@@ -1520,7 +1520,7 @@
             clockEl.textContent = "00д 00:00:00";
         } else {
             banner.classList.remove("ended");
-            labelEl.textContent = "⏳ До финала недели:";
+            labelEl.textContent = "⏳ До финала события:";
             clockEl.textContent = formatRemainingTime(diff);
         }
     }
