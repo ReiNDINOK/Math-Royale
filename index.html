@@ -1222,7 +1222,22 @@
             </div>
         </div>
 
-        <!-- 3. Массовые действия и резервная копия -->
+        <!-- 3. Сброс счётчика ошибок за день по лиге -->
+        <div class="admin-section">
+            <div class="admin-section-title">Сброс ошибок за день по лиге</div>
+            <div class="admin-row">
+                <select id="admin-reset-errors-league">
+                    <option value="league_5_7">5–7 классы</option>
+                    <option value="league_8_9">8 и 9А/9Б</option>
+                    <option value="league_10_11">10–11 классы</option>
+                </select>
+                <button type="button" class="btn btn-gold" id="btn-reset-league-errors" onclick="adminResetLeagueErrors()">
+                    Сбросить ошибки лиги
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. Массовые действия и резервная копия -->
         <div class="admin-section">
             <div class="admin-section-title">Сервисные действия и резервная копия</div>
             <div class="admin-grid-2">
@@ -1251,7 +1266,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction, collection, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
@@ -1686,6 +1701,51 @@
         a.remove();
         URL.revokeObjectURL(url);
         setAdminLog("Резервная копия таблицы сохранена в JSON.");
+    };
+
+    window.adminResetLeagueErrors = async function() {
+        if (!isAdminUser) return;
+        const leagueKey = document.getElementById("admin-reset-errors-league")?.value;
+        const leagueTitle = LEAGUES[leagueKey]?.title || leagueKey;
+        const btn = document.getElementById("btn-reset-league-errors");
+        if (!leagueKey) return;
+
+        if (btn) btn.disabled = true;
+        try {
+            const today = getTodayKey();
+            const q = queryLike = collection(db, "playerStates");
+            const snap = await getDocs(q);
+            let updatedCount = 0;
+            const batch = writeBatch(db);
+
+            snap.forEach((docSnap) => {
+                const data = docSnap.data() || {};
+                let playerLeague = data.league;
+                if (!playerLeague && data.email) {
+                    const resolved = resolveAssignmentFromEmail(data.email);
+                    if (resolved) playerLeague = resolved.league;
+                }
+                if (playerLeague === leagueKey) {
+                    batch.update(docSnap.ref, {
+                        errorsToday: 0,
+                        errDate: today
+                    });
+                    updatedCount++;
+                }
+            });
+
+            if (updatedCount > 0) {
+                await batch.commit();
+                setAdminLog(`Счётчик ошибок (0/3) сброшен для лиги «${leagueTitle}» (обновлено профилей: ${updatedCount}).`);
+            } else {
+                setAdminLog(`В лиге «${leagueTitle}» не найдено профилей игроков в playerStates.`, true);
+            }
+        } catch (err) {
+            showError("Сброс ошибок лиги", err);
+            setAdminLog("Не удалось сбросить счётчик ошибок лиги.", true);
+        } finally {
+            if (btn) btn.disabled = false;
+        }
     };
 
     window.adminResetAllScores = async function() {
