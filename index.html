@@ -59,6 +59,40 @@
             box-shadow: 0 12px 0 #070b14, 0 18px 30px rgba(0, 0, 0, 0.55);
         }
 
+        /* Баннер ошибок Firebase */
+        .error-banner {
+            background: rgba(239, 68, 68, 0.16);
+            border: 2px solid var(--strike);
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+        .error-banner-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            color: #fca5a5;
+            margin-bottom: 6px;
+        }
+        .error-list { display: flex; flex-direction: column; gap: 6px; }
+        .error-item { word-break: break-word; }
+        .error-code {
+            display: inline-block;
+            background: #450a0a;
+            border: 1px solid var(--strike);
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-family: Consolas, monospace;
+            font-size: 0.82rem;
+            color: #fecaca;
+        }
+        .error-hint { color: var(--muted); font-size: 0.8rem; }
+        .error-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .error-actions .btn { width: auto; padding: 6px 12px; font-size: 0.8rem; }
+
         .header-banner {
             text-align: center;
             padding-bottom: 12px;
@@ -318,6 +352,7 @@
             font-weight: 700;
             text-align: center;
             min-height: 20px;
+            word-break: break-word;
         }
 
         .account-bar {
@@ -339,6 +374,16 @@
             color: #fde68a;
             font-weight: 800;
             word-break: break-all;
+        }
+
+        .entry-hint {
+            margin: 0 0 12px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #bae6fd;
+            font-size: 0.85rem;
         }
 
         /* Шкала эликсира и ошибки */
@@ -555,7 +600,7 @@
             font-weight: 700;
         }
 
-        .hidden { display: none; }
+        .hidden { display: none !important; }
 
         @media (max-width: 720px) {
             .all-leagues-grid { grid-template-columns: 1fr; }
@@ -574,6 +619,19 @@
 </head>
 <body>
 <div class="app">
+    <!-- Баннер ошибок Firebase (Auth / Firestore) -->
+    <div class="error-banner hidden" id="error-banner" role="alert">
+        <div class="error-banner-head">
+            <span>⚠ Ошибка Firebase</span>
+            <button class="btn btn-slate" style="width:auto; padding:3px 10px; font-size:0.75rem;" onclick="clearErrors()">Скрыть</button>
+        </div>
+        <div class="error-list" id="error-list"></div>
+        <div class="error-actions hidden" id="error-actions">
+            <button class="btn btn-gold" onclick="retryInit()">Повторить</button>
+            <button class="btn btn-slate" onclick="handleLogout()">Выйти</button>
+        </div>
+    </div>
+
     <!-- Билборд рейтинга лиг -->
     <div class="card" id="billboard-card">
         <div class="header-banner">
@@ -623,6 +681,11 @@
         </form>
     </div>
 
+    <!-- Состояние загрузки после входа -->
+    <div class="card hidden" id="loading-card" style="text-align:center; color:var(--muted); font-weight:700;">
+        Загружаем профиль игрока…
+    </div>
+
     <!-- Выбор лиги и класса (после входа) -->
     <div class="card hidden" id="entry-card">
         <div class="account-bar">
@@ -631,6 +694,7 @@
         </div>
 
         <h2 style="margin:0 0 10px; font-size:1.15rem; font-weight:800;">Выбор лиги и участника / класса</h2>
+        <p class="entry-hint" id="entry-hint">Выберите лигу, а затем класс или участника, за которого вы играете.</p>
         <div class="grid-2" id="league-select-buttons">
             <button class="btn btn-slate" onclick="chooseLeague('league_5_7')">Лига 5–7 (+ тест)</button>
             <button class="btn btn-slate" onclick="chooseLeague('league_8_9')">Лига 8, 9А/9Б</button>
@@ -648,7 +712,7 @@
 
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:12px;">
             <div class="player-league-badge" id="player-badge"></div>
-            <button class="btn btn-slate" style="width:auto; padding:7px 12px; font-size:0.8rem;" onclick="resetPlayerChoice()">Сменить выбор</button>
+            <button class="btn btn-slate" style="width:auto; padding:7px 12px; font-size:0.8rem;" onclick="resetPlayerChoice()">Сменить лигу / класс</button>
         </div>
 
         <div class="hud-top">
@@ -731,7 +795,7 @@
                         </svg>
                     </div>
                     <div class="card-name">Огненный шар</div>
-                    <div class="card-desc">Снимает 2 балла цели (если нет щита).</div>
+                    <div class="card-desc">Снимает 1 щит цели, а если щитов нет — 2 балла.</div>
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
             </div>
@@ -749,17 +813,16 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Вставьте сюда конфигурацию вашего проекта Firebase
-     const firebaseConfig = {
-    apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
-    authDomain: "math-royale-b6986.firebaseapp.com",
-    projectId: "math-royale-b6986",
-    storageBucket: "math-royale-b6986.firebasestorage.app",
-    messagingSenderId: "1090999129516",
-    appId: "1:1090999129516:web:6bf6ff85f8f086f3355609"
-  };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
+        authDomain: "math-royale-b6986.firebaseapp.com",
+        projectId: "math-royale-b6986",
+        storageBucket: "math-royale-b6986.firebasestorage.app",
+        messagingSenderId: "1090999129516",
+        appId: "1:1090999129516:web:6bf6ff85f8f086f3355609"
+    };
 
     const EMBLEMS = {
         league_5_7: `
@@ -801,6 +864,9 @@
         }
     };
 
+    const MAX_ERRORS = 3;
+    const MAX_ELIXIR = 10;
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -809,23 +875,96 @@
     let currentUser = null;
     let playerDocRef = null;
     let unsubPlayerDoc = null;
+    let sessionToken = 0;      // защита от гонок при быстрой смене пользователя
+    let playerReady = false;   // состояние игрока загружено из Firestore
+    let busy = false;          // идёт запись в Firestore
 
     let liveState = null;
     let billboardMode = "single";
     let boardLeague = "league_5_7";
-    let selectedLeague = localStorage.getItem("mr_league") || null;
-    let selectedClass = localStorage.getItem("mr_class") || null;
+    let selectedLeague = null;
+    let selectedClass = null;
 
     // Состояние игрока в Firestore (playerStates/{uid})
     let elixir = 0;
     let errorsToday = 0;
     let errDate = "";
-    let currentAnswer = 0;
+    let currentAnswer = null;
+
+    /* ---------- Ошибки Firebase ---------- */
+
+    function formatErrorCode(err, scope) {
+        const raw = (err && err.code) ? String(err.code) : (err && err.name) ? String(err.name) : "unknown";
+        if (raw.includes("/")) return raw;
+        return scope === "auth" ? `auth/${raw}` : `firestore/${raw}`;
+    }
+
+    function errorHint(code) {
+        if (code.includes("permission-denied")) return "Доступ запрещён правилами Firestore. Проверьте Rules в консоли Firebase (Firestore Database → Rules).";
+        if (code.includes("unavailable") || code.includes("network-request-failed")) return "Нет связи с Firebase. Проверьте интернет и повторите.";
+        if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found") || code.includes("invalid-email")) return "Неверный логин или пароль.";
+        if (code.includes("too-many-requests")) return "Слишком много попыток входа. Подождите и повторите.";
+        if (code.includes("failed-precondition")) return "Конфликт условий операции. Попробуйте ещё раз.";
+        if (code.includes("not-found")) return "Документ не найден в Firestore.";
+        if (code.includes("unauthenticated")) return "Пользователь не авторизован. Войдите заново.";
+        return "";
+    }
+
+    function showError(where, err, scope = "firestore", withActions = false) {
+        const code = formatErrorCode(err, scope);
+        const msg = (err && err.message) ? String(err.message) : String(err);
+        const hint = errorHint(code);
+        console.error(`[${where}]`, err);
+
+        const banner = document.getElementById("error-banner");
+        const list = document.getElementById("error-list");
+        const item = document.createElement("div");
+        item.className = "error-item";
+        const time = new Date().toLocaleTimeString("ru-RU");
+
+        const head = document.createElement("div");
+        head.innerHTML = `<strong></strong> <span class="error-code"></span>`;
+        head.querySelector("strong").textContent = `${time} • ${where}`;
+        head.querySelector(".error-code").textContent = code;
+        item.appendChild(head);
+
+        const body = document.createElement("div");
+        body.textContent = msg;
+        item.appendChild(body);
+
+        if (hint) {
+            const h = document.createElement("div");
+            h.className = "error-hint";
+            h.textContent = hint;
+            item.appendChild(h);
+        }
+
+        list.prepend(item);
+        while (list.children.length > 5) list.removeChild(list.lastChild);
+
+        banner.classList.remove("hidden");
+        if (withActions) document.getElementById("error-actions").classList.remove("hidden");
+    }
+
+    window.clearErrors = function() {
+        document.getElementById("error-list").innerHTML = "";
+        document.getElementById("error-banner").classList.add("hidden");
+        document.getElementById("error-actions").classList.add("hidden");
+    };
+
+    /* ---------- Утилиты ---------- */
 
     function getTodayKey() {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
+
+    function setLog(msg) {
+        document.getElementById("status-log").innerText = msg;
+    }
+
+    function show(id) { document.getElementById(id).classList.remove("hidden"); }
+    function hide(id) { document.getElementById(id).classList.add("hidden"); }
 
     function renderTabEmblems() {
         document.querySelectorAll(".emblem-slot").forEach(slot => {
@@ -836,7 +975,7 @@
 
     function buildElixirBar() {
         const bar = document.getElementById("elixir-bar");
-        bar.innerHTML = Array.from({ length: 10 }, (_, i) =>
+        bar.innerHTML = Array.from({ length: MAX_ELIXIR }, (_, i) =>
             `<div class="elixir-pip ${i < elixir ? "filled" : ""}"></div>`
         ).join("");
     }
@@ -852,8 +991,26 @@
         return state;
     }
 
+    function choiceKey(name) {
+        return `mr_${name}_${currentUser ? currentUser.uid : "guest"}`;
+    }
+
+    function loadSavedChoice() {
+        selectedLeague = null;
+        selectedClass = null;
+        try {
+            const l = localStorage.getItem(choiceKey("league"));
+            const c = localStorage.getItem(choiceKey("class"));
+            if (l && c && LEAGUES[l] && LEAGUES[l].classes.includes(c)) {
+                selectedLeague = l;
+                selectedClass = c;
+            }
+        } catch (e) { /* localStorage недоступен — просто выбираем заново */ }
+    }
+
+    /* ---------- Билборд (общий документ) ---------- */
+
     async function ensureStateExists() {
-        if (!currentUser) return;
         try {
             const snap = await getDoc(tournamentRef);
             if (!snap.exists()) {
@@ -880,63 +1037,75 @@
                 await updateDoc(tournamentRef, updates);
             }
         } catch (err) {
-            console.error("Ошибка инициализации арены:", err);
+            // Не критично для входа: билборд мог уже существовать, а записать структуру нельзя
+            showError("Инициализация mathRoyale/leaguesState", err);
         }
     }
 
     onSnapshot(tournamentRef, (snap) => {
-        if (!snap.exists()) return;
-        liveState = snap.data();
+        liveState = snap.exists() ? snap.data() : buildDefaultState();
         renderBillboard();
-        renderTargets();
         updateControlsState();
     }, (err) => {
-        console.error("Ошибка чтения билборда:", err);
+        showError("Чтение билборда mathRoyale/leaguesState", err);
+        const msg = `<div style="color:#fca5a5;">Не удалось загрузить билборд (см. ошибку выше).</div>`;
+        document.getElementById("leaderboard").innerHTML = msg;
+        document.getElementById("all-leagues-board").innerHTML = msg;
     });
 
-    async function subscribePlayerState(user) {
+    /* ---------- Состояние игрока (playerStates/{uid}) ---------- */
+
+    function applyPlayerData(d) {
+        const today = getTodayKey();
+        elixir = Math.min(MAX_ELIXIR, Math.max(0, Number(d.elixir || 0)));
+        errDate = d.errDate || today;
+        errorsToday = errDate === today ? Math.max(0, Number(d.errorsToday || 0)) : 0;
+    }
+
+    async function loadPlayerState(user) {
         if (unsubPlayerDoc) {
             unsubPlayerDoc();
             unsubPlayerDoc = null;
         }
-
+        playerReady = false;
         playerDocRef = doc(db, "playerStates", user.uid);
         const today = getTodayKey();
-        const snap = await getDoc(playerDocRef);
 
+        const snap = await getDoc(playerDocRef);
+        let data;
         if (!snap.exists()) {
-            await setDoc(playerDocRef, {
-                email: user.email || "",
-                elixir: 0,
-                errorsToday: 0,
-                errDate: today
-            });
+            data = { email: user.email || "", elixir: 0, errorsToday: 0, errDate: today };
+            await setDoc(playerDocRef, data);
         } else {
-            const data = snap.data();
+            data = snap.data();
             if (data.errDate !== today) {
-                await updateDoc(playerDocRef, {
-                    errorsToday: 0,
-                    errDate: today
-                });
+                await updateDoc(playerDocRef, { errorsToday: 0, errDate: today });
+                data = { ...data, errorsToday: 0, errDate: today };
             }
         }
+        applyPlayerData(data);
+        playerReady = true;
+        updateControlsState();
 
+        // Живая подписка включается только после успешной первичной загрузки
         unsubPlayerDoc = onSnapshot(playerDocRef, (docSnap) => {
             if (!docSnap.exists()) return;
-            const d = docSnap.data();
-            const currentDay = getTodayKey();
-            elixir = Math.min(10, Math.max(0, Number(d.elixir || 0)));
-            errDate = d.errDate || currentDay;
-            errorsToday = errDate === currentDay ? Number(d.errorsToday || 0) : 0;
-
+            applyPlayerData(docSnap.data());
             updateControlsState();
-            if (errorsToday < 3 && !document.getElementById("game-card").classList.contains("hidden")) {
-                if (!document.getElementById("problem-text").innerText || document.getElementById("problem-text").innerText === "Загрузка...") {
-                    generateProblem();
-                }
+            // Пример создаётся здесь только если игра открыта, лимит не исчерпан и примера ещё нет
+            if (isGameVisible() && errorsToday < MAX_ERRORS && currentAnswer === null) {
+                generateProblem();
             }
+        }, (err) => {
+            showError("Подписка на playerStates/" + user.uid, err);
         });
     }
+
+    function isGameVisible() {
+        return !document.getElementById("game-card").classList.contains("hidden");
+    }
+
+    /* ---------- Вход / выход ---------- */
 
     window.handleLogin = async function(event) {
         event.preventDefault();
@@ -950,51 +1119,94 @@
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (err) {
-            errEl.innerText = "Неверный логин или пароль. Проверьте данные аккаунта.";
+            const code = formatErrorCode(err, "auth");
+            const hint = errorHint(code);
+            errEl.innerText = `${hint || "Не удалось войти."} Код: ${code}`;
+            showError("Вход (Auth)", err, "auth");
         } finally {
             btn.disabled = false;
         }
     };
 
     window.handleLogout = async function() {
-        await signOut(auth);
+        try {
+            await signOut(auth);
+        } catch (err) {
+            showError("Выход (Auth)", err, "auth");
+        }
     };
 
-    onAuthStateChanged(auth, async (user) => {
-        currentUser = user;
-        const authCard = document.getElementById("auth-card");
-        const entryCard = document.getElementById("entry-card");
-        const gameCard = document.getElementById("game-card");
+    async function initSession(user) {
+        const myToken = ++sessionToken;
+        hide("auth-card");
+        hide("entry-card");
+        hide("game-card");
+        show("loading-card");
+        document.getElementById("auth-user-email").innerText = user.email || user.uid;
+        document.getElementById("game-user-email").innerText = user.email || user.uid;
+        currentAnswer = null;
 
-        if (user) {
-            authCard.classList.add("hidden");
-            document.getElementById("auth-user-email").innerText = user.email || user.uid;
-            document.getElementById("game-user-email").innerText = user.email || user.uid;
+        try {
+            // 1) playerStates/{uid}: загрузка/создание + проверка errDate и errorsToday
+            await loadPlayerState(user);
+            if (myToken !== sessionToken) return;
 
+            // 2) Общий документ билборда (ошибки показываются, но вход не блокируют)
             await ensureStateExists();
-            await subscribePlayerState(user);
+            if (myToken !== sessionToken) return;
 
-            if (selectedLeague && selectedClass && LEAGUES[selectedLeague]?.classes.includes(selectedClass)) {
+            // 3) Выбор лиги/класса (если не сохранён) → 4) game-card → 5) пример
+            hide("loading-card");
+            loadSavedChoice();
+            if (selectedLeague && selectedClass) {
                 openGameView();
             } else {
-                entryCard.classList.remove("hidden");
-                gameCard.classList.add("hidden");
+                showEntryView(true);
             }
+        } catch (err) {
+            if (myToken !== sessionToken) return;
+            hide("loading-card");
+            showError("Загрузка профиля игрока (playerStates)", err, "firestore", true);
+        }
+    }
+
+    window.retryInit = function() {
+        if (!currentUser) return;
+        clearErrors();
+        initSession(currentUser);
+    };
+
+    onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+
+        if (user) {
+            initSession(user);
         } else {
+            sessionToken++;
             if (unsubPlayerDoc) {
                 unsubPlayerDoc();
                 unsubPlayerDoc = null;
             }
             playerDocRef = null;
+            playerReady = false;
             elixir = 0;
             errorsToday = 0;
+            errDate = "";
+            currentAnswer = null;
+            selectedLeague = null;
+            selectedClass = null;
             buildElixirBar();
+            clearErrors();
+            setLog("");
 
-            authCard.classList.remove("hidden");
-            entryCard.classList.add("hidden");
-            gameCard.classList.add("hidden");
+            show("auth-card");
+            hide("loading-card");
+            hide("entry-card");
+            hide("game-card");
         }
     });
+
+    /* ---------- Билборд: отображение ---------- */
 
     window.setBillboardMode = function(mode) {
         billboardMode = mode;
@@ -1084,8 +1296,19 @@
         }
     }
 
+    /* ---------- Выбор лиги и класса ---------- */
+
+    function showEntryView(isFirstTime) {
+        hide("game-card");
+        hide("loading-card");
+        show("entry-card");
+        hide("class-select-buttons");
+        document.getElementById("entry-hint").innerText = isFirstTime
+            ? "Для этого аккаунта команда ещё не выбрана. Выберите лигу, а затем класс или участника."
+            : "Выберите другую лигу и класс или участника. Эликсир и ошибки за день сохраняются в аккаунте.";
+    }
+
     window.chooseLeague = function(leagueKey) {
-        selectedLeague = leagueKey;
         const box = document.getElementById("class-select-buttons");
         box.classList.remove("hidden");
         box.innerHTML = LEAGUES[leagueKey].classes
@@ -1094,33 +1317,45 @@
     };
 
     window.chooseClass = function(leagueKey, cls) {
+        if (!LEAGUES[leagueKey] || !LEAGUES[leagueKey].classes.includes(cls)) return;
         selectedLeague = leagueKey;
         selectedClass = cls;
-        localStorage.setItem("mr_league", leagueKey);
-        localStorage.setItem("mr_class", cls);
+        try {
+            localStorage.setItem(choiceKey("league"), leagueKey);
+            localStorage.setItem(choiceKey("class"), cls);
+        } catch (e) { /* не критично */ }
+        currentAnswer = null;
         openGameView();
     };
 
     window.resetPlayerChoice = function() {
+        selectedLeague = null;
         selectedClass = null;
-        localStorage.removeItem("mr_class");
-        document.getElementById("game-card").classList.add("hidden");
-        document.getElementById("entry-card").classList.remove("hidden");
-        document.getElementById("class-select-buttons").classList.add("hidden");
+        currentAnswer = null;
+        try {
+            localStorage.removeItem(choiceKey("league"));
+            localStorage.removeItem(choiceKey("class"));
+        } catch (e) { /* не критично */ }
+        setLog("");
+        showEntryView(false);
     };
 
     function openGameView() {
-        if (!currentUser) return;
-        document.getElementById("entry-card").classList.add("hidden");
-        document.getElementById("game-card").classList.remove("hidden");
+        if (!currentUser || !playerReady || !selectedLeague || !selectedClass) return;
+        hide("entry-card");
+        hide("loading-card");
+        show("game-card");
         document.getElementById("player-badge").innerHTML = `
             ${EMBLEMS[selectedLeague] || ""}
             <span>${LEAGUES[selectedLeague].title} • ${selectedClass}</span>
         `;
         switchBoardLeague(selectedLeague);
         renderTargets();
-        generateProblem();
         updateControlsState();
+        // Пример генерируется строго при errorsToday < 3 (данные игрока уже загружены)
+        if (errorsToday < MAX_ERRORS) {
+            generateProblem();
+        }
     }
 
     function renderTargets() {
@@ -1130,27 +1365,31 @@
         select.innerHTML = opponents.map(op => `<option value="${op}">${op}</option>`).join("");
     }
 
+    /* ---------- Примеры ---------- */
+
     function randInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
     function generateProblem() {
-        if (errorsToday >= 3 || !selectedLeague) return;
+        if (!playerReady || errorsToday >= MAX_ERRORS || !selectedLeague) return;
+
+        const el = document.getElementById("problem-text");
 
         if (selectedLeague === "league_5_7") {
             const type = randInt(1, 3);
             if (type === 1) {
                 const a = randInt(15, 85), b = randInt(12, 65);
                 currentAnswer = a + b;
-                document.getElementById("problem-text").innerText = `${a} + ${b} = ?`;
+                el.innerText = `${a} + ${b} = ?`;
             } else if (type === 2) {
                 const a = randInt(40, 120), b = randInt(10, 39);
                 currentAnswer = a - b;
-                document.getElementById("problem-text").innerText = `${a} - ${b} = ?`;
+                el.innerText = `${a} - ${b} = ?`;
             } else {
                 const a = randInt(3, 12), b = randInt(3, 12);
                 currentAnswer = a * b;
-                document.getElementById("problem-text").innerText = `${a} × ${b} = ?`;
+                el.innerText = `${a} × ${b} = ?`;
             }
         } else if (selectedLeague === "league_8_9") {
             const type = randInt(1, 3);
@@ -1158,19 +1397,19 @@
                 const root = randInt(4, 15);
                 const add = randInt(5, 30);
                 currentAnswer = root + add;
-                document.getElementById("problem-text").innerText = `√${root * root} + ${add} = ?`;
+                el.innerText = `√${root * root} + ${add} = ?`;
             } else if (type === 2) {
                 const base = randInt(2, 6);
                 const exp = randInt(2, 4);
                 const sub = randInt(1, 10);
                 currentAnswer = Math.pow(base, exp) - sub;
-                document.getElementById("problem-text").innerText = `${base}^${exp} - ${sub} = ?`;
+                el.innerText = `${base}^${exp} - ${sub} = ?`;
             } else {
                 const x = randInt(2, 15);
                 const k = randInt(2, 6);
                 const b = randInt(3, 20);
                 currentAnswer = x;
-                document.getElementById("problem-text").innerText = `${k}x + ${b} = ${k * x + b}; x = ?`;
+                el.innerText = `${k}x + ${b} = ${k * x + b}; x = ?`;
             }
         } else {
             const type = randInt(1, 3);
@@ -1178,17 +1417,17 @@
                 const base = randInt(2, 5);
                 const exp = randInt(3, 5);
                 currentAnswer = exp;
-                document.getElementById("problem-text").innerText = `log_${base}(${Math.pow(base, exp)}) = ?`;
+                el.innerText = `log_${base}(${Math.pow(base, exp)}) = ?`;
             } else if (type === 2) {
                 const a1 = randInt(2, 12);
                 const d = randInt(2, 7);
                 const n = randInt(4, 8);
                 currentAnswer = a1 + (n - 1) * d;
-                document.getElementById("problem-text").innerText = `a₁=${a1}, d=${d} → a_${n} = ?`;
+                el.innerText = `a₁=${a1}, d=${d} → a_${n} = ?`;
             } else {
                 const x = randInt(3, 12);
                 currentAnswer = x * x - 4;
-                document.getElementById("problem-text").innerText = `f(${x}) при f(t) = t² - 4`;
+                el.innerText = `f(${x}) при f(t) = t² - 4`;
             }
         }
 
@@ -1197,12 +1436,8 @@
         input.focus();
     }
 
-    function setLog(msg) {
-        document.getElementById("status-log").innerText = msg;
-    }
-
     function updateControlsState() {
-        const isBlocked = errorsToday >= 3;
+        const isBlocked = errorsToday >= MAX_ERRORS;
 
         document.getElementById("elixir-val").innerText = elixir;
         document.getElementById("errors-val").innerText = errorsToday;
@@ -1212,107 +1447,156 @@
         document.getElementById("blocked-section").classList.toggle("hidden", !isBlocked);
 
         const hasTargets = Boolean(document.getElementById("target-select").value);
-        document.getElementById("btn-shield").disabled = !currentUser || elixir < 3;
-        document.getElementById("btn-boost").disabled = !currentUser || elixir < 4;
-        document.getElementById("btn-strike").disabled = !currentUser || elixir < 6 || !hasTargets;
+        const ready = Boolean(currentUser) && playerReady && !busy;
+        document.getElementById("btn-shield").disabled = !ready || elixir < 3;
+        document.getElementById("btn-boost").disabled = !ready || elixir < 4;
+        document.getElementById("btn-strike").disabled = !ready || elixir < 6 || !hasTargets;
+        document.getElementById("submit-answer-btn").disabled = !ready;
     }
 
+    function setBusy(value) {
+        busy = value;
+        updateControlsState();
+    }
+
+    function canAct() {
+        return Boolean(currentUser && playerDocRef && playerReady && selectedLeague && selectedClass && !busy);
+    }
+
+    /* ---------- Игровые действия ---------- */
+    // Локальное состояние (elixir/errorsToday) НЕ меняется вручную: оно приходит из onSnapshot
+    // после подтверждения записи. Связанные записи в двух документах идут одним атомарным batch/transaction.
+
     window.submitAnswer = async function() {
-        if (!currentUser || !playerDocRef || errorsToday >= 3) return;
+        if (!canAct() || errorsToday >= MAX_ERRORS || currentAnswer === null) return;
         const input = document.getElementById("answer-input");
         const val = parseInt(input.value, 10);
         if (Number.isNaN(val)) return;
 
         const today = getTodayKey();
         const activeErrors = errDate === today ? errorsToday : 0;
+        const answerAtSubmit = currentAnswer;
 
-        if (val === currentAnswer) {
-            const nextElixir = Math.min(10, elixir + 1);
-            elixir = nextElixir;
-            await updateDoc(playerDocRef, {
-                elixir: nextElixir,
-                errDate: today,
-                errorsToday: activeErrors
-            });
-            await updateDoc(tournamentRef, {
-                [`${selectedLeague}.${selectedClass}.score`]: increment(1)
-            });
-            setLog("Точно в цель! +1 балл и +1 эликсир.");
-            updateControlsState();
-            generateProblem();
-        } else {
-            const nextErr = activeErrors + 1;
-            errorsToday = nextErr;
-            errDate = today;
-            await updateDoc(playerDocRef, {
-                errorsToday: nextErr,
-                errDate: today
-            });
-            updateControlsState();
-
-            if (nextErr >= 3) {
-                setLog("3-я ошибка за день зафиксирована в аккаунте — новые примеры закрыты до завтра.");
-            } else {
-                setLog(`Мимо! Правильный ответ: ${currentAnswer}. Осталось попыток сегодня: ${3 - nextErr}.`);
+        setBusy(true);
+        try {
+            if (val === answerAtSubmit) {
+                const batch = writeBatch(db);
+                batch.update(playerDocRef, {
+                    elixir: Math.min(MAX_ELIXIR, elixir + 1),
+                    errDate: today,
+                    errorsToday: activeErrors
+                });
+                batch.update(tournamentRef, {
+                    [`${selectedLeague}.${selectedClass}.score`]: increment(1)
+                });
+                await batch.commit();
+                setLog("Точно в цель! +1 балл и +1 эликсир.");
                 generateProblem();
+            } else {
+                const nextErr = activeErrors + 1;
+                await updateDoc(playerDocRef, {
+                    errorsToday: nextErr,
+                    errDate: today
+                });
+                if (nextErr >= MAX_ERRORS) {
+                    currentAnswer = null;
+                    setLog("3-я ошибка за день зафиксирована в аккаунте — новые примеры закрыты до завтра.");
+                } else {
+                    setLog(`Мимо! Правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - nextErr}.`);
+                    generateProblem();
+                }
             }
+        } catch (err) {
+            showError("Ответ на пример", err);
+            setLog("Не удалось сохранить результат: данные не изменились.");
+        } finally {
+            setBusy(false);
         }
     };
 
     window.castShield = async function() {
-        if (!currentUser || !playerDocRef || elixir < 3) return;
-        const nextElixir = elixir - 3;
-        elixir = nextElixir;
-        await updateDoc(playerDocRef, { elixir: nextElixir });
-        await updateDoc(tournamentRef, {
-            [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
-        });
-        setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
-        updateControlsState();
+        if (!canAct() || elixir < 3) return;
+        setBusy(true);
+        try {
+            const batch = writeBatch(db);
+            batch.update(playerDocRef, { elixir: elixir - 3 });
+            batch.update(tournamentRef, {
+                [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
+            });
+            await batch.commit();
+            setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
+        } catch (err) {
+            showError("Карта «Щит башни»", err);
+            setLog("Карта не сработала: эликсир не списан.");
+        } finally {
+            setBusy(false);
+        }
     };
 
     window.castBoost = async function() {
-        if (!currentUser || !playerDocRef || elixir < 4) return;
-        const nextElixir = elixir - 4;
-        elixir = nextElixir;
-        await updateDoc(playerDocRef, { elixir: nextElixir });
-        await updateDoc(tournamentRef, {
-            [`${selectedLeague}.${selectedClass}.score`]: increment(3)
-        });
-        setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
-        updateControlsState();
+        if (!canAct() || elixir < 4) return;
+        setBusy(true);
+        try {
+            const batch = writeBatch(db);
+            batch.update(playerDocRef, { elixir: elixir - 4 });
+            batch.update(tournamentRef, {
+                [`${selectedLeague}.${selectedClass}.score`]: increment(3)
+            });
+            await batch.commit();
+            setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
+        } catch (err) {
+            showError("Карта «Ускорение»", err);
+            setLog("Карта не сработала: эликсир не списан.");
+        } finally {
+            setBusy(false);
+        }
     };
 
     window.castStrike = async function() {
         const targetClass = document.getElementById("target-select").value;
-        if (!currentUser || !playerDocRef || elixir < 6 || !targetClass || !liveState?.[selectedLeague]?.[targetClass]) return;
+        if (!canAct() || elixir < 6 || !targetClass) return;
+        if (!LEAGUES[selectedLeague].classes.includes(targetClass) || targetClass === selectedClass) return;
 
-        const nextElixir = elixir - 6;
-        elixir = nextElixir;
-        await updateDoc(playerDocRef, { elixir: nextElixir });
+        setBusy(true);
+        try {
+            // Транзакция: актуальные щиты/баллы цели и эликсир игрока читаются с сервера
+            const resultMsg = await runTransaction(db, async (tx) => {
+                const playerSnap = await tx.get(playerDocRef);
+                const tourSnap = await tx.get(tournamentRef);
+                if (!playerSnap.exists()) throw new Error("Документ игрока не найден");
+                if (!tourSnap.exists()) throw new Error("Документ mathRoyale/leaguesState не найден");
 
-        const targetData = liveState[selectedLeague][targetClass];
-        const targetShields = Number(targetData.shields || 0);
-        const targetScore = Number(targetData.score || 0);
+                const serverElixir = Math.min(MAX_ELIXIR, Math.max(0, Number(playerSnap.data().elixir || 0)));
+                if (serverElixir < 6) throw new Error("Недостаточно эликсира (по данным сервера)");
 
-        if (targetShields > 0) {
-            await updateDoc(tournamentRef, {
-                [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
+                const target = tourSnap.data()?.[selectedLeague]?.[targetClass] || {};
+                const targetShields = Number(target.shields || 0);
+                const targetScore = Number(target.score || 0);
+
+                tx.update(playerDocRef, { elixir: serverElixir - 6 });
+
+                if (targetShields > 0) {
+                    tx.update(tournamentRef, {
+                        [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
+                    });
+                    return `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`;
+                }
+                tx.update(tournamentRef, {
+                    [`${selectedLeague}.${targetClass}.score`]: Math.max(0, targetScore - 2)
+                });
+                return `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`;
             });
-            setLog(`Огненный шар по «${targetClass}» отражён щитом!`);
-        } else {
-            const nextScore = Math.max(0, targetScore - 2);
-            await updateDoc(tournamentRef, {
-                [`${selectedLeague}.${targetClass}.score`]: nextScore
-            });
-            setLog(`Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`);
+            setLog(resultMsg);
+        } catch (err) {
+            showError("Карта «Огненный шар»", err);
+            setLog("Карта не сработала: эликсир не списан.");
+        } finally {
+            setBusy(false);
         }
-
-        updateControlsState();
     };
 
     document.getElementById("answer-input").addEventListener("keydown", (e) => {
-        if (e.key === "Enter") submitAnswer();
+        if (e.key === "Enter") window.submitAnswer();
     });
 
     renderTabEmblems();
