@@ -469,7 +469,11 @@
             margin-bottom: 12px;
             box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.45);
         }
-
+        .problem-box sup {
+            font-size: 0.62em;
+            line-height: 0;
+            vertical-align: super;
+        }
         input[type="number"], input[type="email"], input[type="password"], select {
             width: 100%;
             padding: 12px;
@@ -2081,7 +2085,7 @@
                 const exp = randInt(2, 4);
                 const sub = randInt(1, 10);
                 currentAnswer = Math.pow(base, exp) - sub;
-                el.innerText = `${base}^${exp} - ${sub} = ?`;
+                el.innerHTML = `${base}<sup>${exp}</sup> - ${sub} = ?`;
             } else {
                 const x = randInt(2, 15);
                 const k = randInt(2, 6);
