@@ -665,6 +665,27 @@
             text-align: center;
             margin-bottom: 12px;
         }
+        .blocked-timer-wrap {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 10px;
+            background: rgba(14, 21, 37, 0.75);
+            border: 1px solid rgba(239, 68, 68, 0.45);
+            font-size: 0.85rem;
+            color: #fecaca;
+        }
+        .blocked-timer-clock {
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
 
         .status-log {
             margin-top: 12px;
@@ -1070,6 +1091,10 @@
         <div id="blocked-section" class="blocked-banner hidden">
             <strong>Лимит ошибок на сегодня исчерпан (3/3).</strong>
             <p style="margin:6px 0 0; color:var(--muted);">Решать новые примеры и получать баллы за них можно будет завтра.</p>
+            <div class="blocked-timer-wrap" role="timer" aria-live="off">
+                <span>⏳ До сброса ошибок (00:00, UTC+5):</span>
+                <span class="blocked-timer-clock" id="daily-reset-clock">--:--:--</span>
+            </div>
         </div>
 
         <div class="abilities-box">
@@ -1597,10 +1622,48 @@
         }
     }
 
+    function getMsUntilMidnightUTC5() {
+        const offsetMs = 5 * 60 * 60 * 1000; // UTC+5 (Астана)
+        const nowUtc5 = new Date(Date.now() + offsetMs);
+        const nextMidnightUtc5 = Date.UTC(
+            nowUtc5.getUTCFullYear(),
+            nowUtc5.getUTCMonth(),
+            nowUtc5.getUTCDate() + 1,
+            0, 0, 0, 0
+        );
+        return Math.max(0, nextMidnightUtc5 - nowUtc5.getTime());
+    }
+
+    function updateDailyResetTimer() {
+        const clockEl = document.getElementById("daily-reset-clock");
+        if (!clockEl) return;
+        const diff = getMsUntilMidnightUTC5();
+        const totalSec = Math.floor(diff / 1000);
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        const seconds = totalSec % 60;
+        const pad = n => String(n).padStart(2, "0");
+        clockEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+        // Если наступил новый календарный день, а ошибки ещё не сбросились в UI — обновляем состояние
+        if (playerReady && errorsToday >= MAX_ERRORS && errDate && errDate !== getTodayKey()) {
+            errorsToday = 0;
+            errDate = getTodayKey();
+            updateControlsState();
+            if (isGameVisible() && currentAnswer === null) {
+                generateProblem();
+            }
+        }
+    }
+
     function ensureCountdownLoop() {
         updateCountdownDisplay();
+        updateDailyResetTimer();
         if (!countdownInterval) {
-            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+            countdownInterval = setInterval(() => {
+                updateCountdownDisplay();
+                updateDailyResetTimer();
+            }, 1000);
         }
     }
 
