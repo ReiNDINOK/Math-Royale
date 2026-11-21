@@ -739,7 +739,150 @@
             font-weight: 800;
             cursor: pointer;
         }
-        .rules-trigger:focus-visible, .rules-close:focus-visible { outline: 3px solid var(--gold); }</style>
+        .rules-trigger:focus-visible, .rules-close:focus-visible { outline: 3px solid var(--gold); }
+        /* Таймер обратного отсчёта турнира (управляется админом) */
+        .countdown-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.16) 0%, rgba(180, 83, 9, 0.22) 100%);
+            border: 1.5px solid rgba(251, 191, 36, 0.55);
+            box-shadow: inset 0 0 14px rgba(251, 191, 36, 0.12);
+        }
+        .countdown-label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #fde68a;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .countdown-clock {
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #ffffff;
+            background: rgba(14, 21, 37, 0.85);
+            border: 1px solid rgba(251, 191, 36, 0.45);
+            padding: 4px 10px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
+        }
+        .countdown-banner.ended {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(239, 68, 68, 0.6);
+        }
+        .countdown-banner.ended .countdown-label {
+            color: #fca5a5;
+        }
+
+        /* Баннер паузы от админа */
+        .pause-banner {
+            background: rgba(251, 191, 36, 0.14);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 12px;
+            color: #fef3c7;
+        }
+
+        /* Панель администратора */
+        .admin-card {
+            border-color: var(--gold);
+            background: linear-gradient(180deg, #272235 0%, #161829 100%);
+        }
+        .admin-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(251, 191, 36, 0.25);
+        }
+        .admin-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .admin-section {
+            background: var(--panel-bg);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .admin-section:last-child {
+            margin-bottom: 0;
+        }
+        .admin-section-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #fde68a;
+            margin-bottom: 10px;
+        }
+        .admin-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .admin-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .admin-row select, .admin-row input[type="number"], .admin-row input[type="text"] {
+            margin-bottom: 0;
+            flex: 1;
+            min-width: 120px;
+            font-size: 0.95rem;
+            padding: 9px 11px;
+            text-align: left;
+        }
+        .admin-status-pill {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            margin-left: 6px;
+        }
+        .pill-on {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+        .pill-off {
+            background: rgba(148, 163, 184, 0.16);
+            color: #cbd5e1;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+        .admin-log {
+            margin-top: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #6ee7b7;
+            min-height: 20px;
+            text-align: center;
+        }
+        @media (max-width: 600px) {
+            .admin-grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 <div class="app">
@@ -760,6 +903,11 @@
     <div class="card" id="billboard-card">
         <div class="header-banner">
             <h1>Math Royale</h1>
+            <p class="subtitle">Предметная неделя • Верный ответ = +1 эликсир и +1 балл • 3 ошибки за день = стоп до завтра</p>
+            <div class="countdown-banner hidden" id="countdown-banner" role="timer" aria-live="off">
+                <span class="countdown-label" id="countdown-label">⏳ До финала недели (28 ноября, 23:59):</span>
+                <span class="countdown-clock" id="countdown-clock">--д --:--:--</span>
+            </div>
         </div>
 
         <div class="billboard-toolbar">
@@ -798,7 +946,7 @@
     <div class="card" id="auth-card">
         <h2 style="margin:0 0 8px; font-size:1.2rem; font-weight:800; text-align:center;">Вход в аккаунт участника</h2>
         <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem; text-align:center;">
-            Лига и класс привязаны к вашему логину.
+            Лига и класс привязаны к вашему логину. Ошибки за день сохраняются в Firestore.
         </p>
 
         <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
@@ -845,6 +993,11 @@
             <button class="btn btn-gold" id="submit-answer-btn" onclick="submitAnswer()">Атаковать ответом</button>
         </div>
 
+        <div id="paused-section" class="pause-banner hidden">
+            <strong>⏸ Арена временно поставлена на паузу организатором.</strong>
+            <p style="margin:6px 0 0; color:var(--muted);">Решение примеров и применение карт возобновятся после снятия паузы.</p>
+        </div>
+
         <div id="blocked-section" class="blocked-banner hidden">
             <strong>Лимит ошибок на сегодня исчерпан (3/3).</strong>
             <p style="margin:6px 0 0; color:var(--muted);">Решать новые примеры и получать баллы за них можно будет завтра.</p>
@@ -854,6 +1007,7 @@
             <div class="abilities-title">Карты эликсира</div>
 
             <div class="cards-grid-3">
+                <!-- 3 эликсира: Щит башни -->
                 <div class="game-card card-shield">
                     <div class="card-art art-shield">
                         <span class="cost-pill">3 эл.</span>
@@ -868,6 +1022,7 @@
                     <button class="btn btn-shield" id="btn-shield" onclick="castShield()">Активировать</button>
                 </div>
 
+                <!-- 4 эликсира: Ускорение -->
                 <div class="game-card card-boost">
                     <div class="card-art art-boost">
                         <span class="cost-pill">4 эл.</span>
@@ -880,6 +1035,26 @@
                     <button class="btn btn-boost" id="btn-boost" onclick="castBoost()">Дать +3 балла</button>
                 </div>
 
+                <!-- 5 эликсиров: Правосудие -->
+                <div class="game-card card-justice">
+                    <div class="card-art art-justice">
+                        <span class="cost-pill">5 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <path d="M31 27L51 47" stroke="#b45309" stroke-width="6.5" stroke-linecap="round"/>
+                            <path d="M31 27L51 47" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/>
+                            <rect x="13" y="21" width="24" height="13" rx="3" transform="rotate(-45 13 21)" fill="#d97706" stroke="#fef3c7" stroke-width="2"/>
+                            <path d="M12 22L21 31" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
+                            <path d="M24 10L33 19" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
+                            <path d="M12 53H44L40 47H16L12 53Z" fill="#92400e" stroke="#fde68a" stroke-width="2" stroke-linejoin="round"/>
+                            <rect x="9" y="53" width="38" height="4" rx="2" fill="#d97706" stroke="#fef3c7" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Правосудие</div>
+                    <div class="card-desc">Отражает одну кражу у вашей команды.</div>
+                    <button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button>
+                </div>
+
+                <!-- 6 эликсиров: Огненный шар -->
                 <div class="game-card card-strike">
                     <div class="card-art art-strike">
                         <span class="cost-pill">6 эл.</span>
@@ -909,29 +1084,24 @@
                     <div class="card-desc">Снимает 1 щит цели, а если щитов нет — 2 балла.</div>
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
+
+                <!-- 10 эликсиров: Кража -->
                 <div class="game-card card-theft">
                     <div class="card-art art-theft">
                         <span class="cost-pill">10 эл.</span>
                         <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-                            <!-- Уши енота -->
                             <path d="M13 24L11 9L24 16Z" fill="#64748b" stroke="#e2e8f0" stroke-width="2" stroke-linejoin="round"/>
                             <path d="M51 24L53 9L40 16Z" fill="#64748b" stroke="#e2e8f0" stroke-width="2" stroke-linejoin="round"/>
                             <path d="M14 21L13 13L21 17Z" fill="#1e293b"/>
                             <path d="M50 21L51 13L43 17Z" fill="#1e293b"/>
-                            <!-- Голова енота -->
                             <path d="M32 14C20 14 11 22 10 34C9 45 20 53 32 54C44 53 55 45 54 34C53 22 44 14 32 14Z" fill="#94a3b8" stroke="#f1f5f9" stroke-width="2"/>
-                            <!-- Полоска на лбу -->
                             <path d="M32 15V26" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
-                            <!-- Бандитская маска-повязка воришки -->
                             <path d="M11 31C16 26 25 27 32 30C39 27 48 26 53 31L51 40C45 43 38 41 32 37C26 41 19 43 13 40L11 31Z" fill="#0f172a" stroke="#34d399" stroke-width="1.6"/>
-                            <!-- Узелок повязки сбоку -->
                             <path d="M53 32L59 28M53 34L60 36" stroke="#34d399" stroke-width="2.2" stroke-linecap="round"/>
-                            <!-- Хитрые глаза -->
                             <ellipse cx="22" cy="34" rx="4.2" ry="3.2" fill="#f8fafc"/>
                             <ellipse cx="42" cy="34" rx="4.2" ry="3.2" fill="#f8fafc"/>
                             <circle cx="23" cy="34" r="1.8" fill="#0f172a"/>
                             <circle cx="41" cy="34" r="1.8" fill="#0f172a"/>
-                            <!-- Светлая мордочка и нос -->
                             <ellipse cx="32" cy="45" rx="9" ry="6.5" fill="#f1f5f9"/>
                             <ellipse cx="32" cy="43" rx="3.8" ry="2.6" fill="#0f172a"/>
                             <path d="M28 48Q32 51 36 48" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
@@ -940,28 +1110,6 @@
                     <div class="card-name">Кража</div>
                     <div class="card-desc">Переносит до 2 баллов цели вашей команде. Щит не мешает.</div>
                     <button class="btn btn-theft" id="btn-theft" onclick="castTheft()">Украсть баллы</button>
-                </div>
-
-                <div class="game-card card-justice">
-                    <div class="card-art art-justice">
-                        <span class="cost-pill">5 эл.</span>
-                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
-                            <!-- Рукоятка судейского молотка -->
-                            <path d="M31 27L51 47" stroke="#b45309" stroke-width="6.5" stroke-linecap="round"/>
-                            <path d="M31 27L51 47" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/>
-                            <!-- Головка молотка -->
-                            <rect x="13" y="21" width="24" height="13" rx="3" transform="rotate(-45 13 21)" fill="#d97706" stroke="#fef3c7" stroke-width="2"/>
-                            <!-- Золотые ободки на бойках -->
-                            <path d="M12 22L21 31" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
-                            <path d="M24 10L33 19" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
-                            <!-- Звуковая подставка судьи -->
-                            <path d="M12 53H44L40 47H16L12 53Z" fill="#92400e" stroke="#fde68a" stroke-width="2" stroke-linejoin="round"/>
-                            <rect x="9" y="53" width="38" height="4" rx="2" fill="#d97706" stroke="#fef3c7" stroke-width="1.5"/>
-                        </svg>
-                    </div>
-                    <div class="card-name">Правосудие</div>
-                    <div class="card-desc">Отражает одну кражу у вашей команды.</div>
-                    <button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button>
                 </div>
             </div>
 
@@ -973,6 +1121,70 @@
 
         <div class="status-log" id="status-log"></div>
     </div>
+
+    <!-- Панель администратора (только для admin-аккаунта) -->
+    <div class="card admin-card hidden" id="admin-card">
+        <div class="admin-header">
+            <div class="admin-title">👑 Панель организатора</div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="account-email" id="admin-user-email" style="font-size:0.84rem;"></span>
+                <button class="btn btn-slate" style="width:auto; padding:6px 12px; font-size:0.8rem;" onclick="handleLogout()">Выйти</button>
+            </div>
+        </div>
+
+        <!-- 1. Управление таймером и состоянием арены -->
+        <div class="admin-section">
+            <div class="admin-section-title">
+                Таймер и режим арены
+                <span class="admin-status-pill pill-off" id="admin-timer-status">Таймер скрыт</span>
+                <span class="admin-status-pill pill-on" id="admin-arena-status">Арена активна</span>
+            </div>
+            <div class="admin-grid-2">
+                <button type="button" class="btn btn-gold" id="btn-toggle-timer" onclick="adminToggleTimer()">
+                    Показать таймер (до 28 ноя, 23:59)
+                </button>
+                <button type="button" class="btn btn-slate" id="btn-toggle-pause" onclick="adminTogglePause()">
+                    Поставить арену на паузу
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Корректировка баллов / щитов / правосудия команды -->
+        <div class="admin-section">
+            <div class="admin-section-title">Корректировка показателей команды</div>
+            <div class="admin-row" style="margin-bottom:8px;">
+                <select id="admin-league-select" onchange="adminPopulateTeams()">
+                    <option value="league_5_7">5–7 классы</option>
+                    <option value="league_8_9">8 и 9А/9Б</option>
+                    <option value="league_10_11">10–11 классы</option>
+                </select>
+                <select id="admin-team-select"></select>
+                <input type="number" id="admin-delta-input" value="1" step="1" placeholder="± значение">
+            </div>
+            <div class="admin-grid-2">
+                <button type="button" class="btn btn-boost" onclick="adminAdjustTeam('score')">Изменить баллы (±)</button>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <button type="button" class="btn btn-shield" onclick="adminAdjustTeam('shields')">Щиты (±)</button>
+                    <button type="button" class="btn btn-justice" onclick="adminAdjustTeam('justice')">Правосудие (±)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Массовые действия и резервная копия -->
+        <div class="admin-section">
+            <div class="admin-section-title">Сервисные действия и резервная копия</div>
+            <div class="admin-grid-2">
+                <button type="button" class="btn btn-slate" onclick="adminExportSnapshot()">
+                    📥 Скачать снимок таблицы (JSON)
+                </button>
+                <button type="button" class="btn btn-strike" onclick="adminResetAllScores()">
+                    🗑 Сбросить все баллы и эффекты
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-log" id="admin-log"></div>
+    </div>
 </div>
 
 <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
@@ -983,7 +1195,7 @@
     <span class="rules-trigger-label">Правила</span>
 </button>
 
-<dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит - 3 эликсира: отражает один огненный шар.</li><li>Ускорение - 4 эликсира: +3 балла своей команде.</li><li>Огненный шар - 6 эликсира: снимает один щит, а без щита - до 2 баллов цели.</li><li>Кража - 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие - 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки - другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
+<dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит — 3 эликсира: отражает один огненный шар.</li><li>Ускорение — 4 эликсира: +3 балла своей команде.</li><li>Огненный шар — 6 эликсира: снимает один щит, а без щита — до 2 баллов цели.</li><li>Кража — 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие — 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки — другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -1076,6 +1288,16 @@
 
     const MAX_ERRORS = 3;
     const MAX_ELIXIR = 10;
+    // Целевая дата окончания предметной недели: 28 ноября текущего года, 23:59:00 локального времени
+    const TOURNAMENT_DEADLINE = new Date(new Date().getFullYear(), 10, 28, 23, 59, 0);
+
+    // Проверка, является ли email аккаунтом администратора (например: admin@math.local, admin.school@math.local)
+    function isAdminEmail(email) {
+        if (!email) return false;
+        const localPart = String(email).toLowerCase().split("@")[0] || "";
+        const parts = localPart.split(/[._-]+/).filter(Boolean);
+        return parts.includes("admin");
+    }
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -1098,6 +1320,9 @@
     let boardLeague = "league_5_7";
     let selectedLeague = null;
     let selectedClass = null;
+
+    let isAdminUser = false;
+    let countdownInterval = null;
 
     let elixir = 0;
     let errorsToday = 0;
@@ -1250,6 +1475,184 @@
         billboardWaitTimer = null;
     }
 
+    /* ---------- Таймер обратного отсчёта ---------- */
+
+    function formatRemainingTime(ms) {
+        if (ms <= 0) return "00д 00:00:00";
+        const totalSec = Math.floor(ms / 1000);
+        const days = Math.floor(totalSec / 86400);
+        const hours = Math.floor((totalSec % 86400) / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        const seconds = totalSec % 60;
+        const pad = n => String(n).padStart(2, "0");
+        return `${days}д ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+
+    function updateCountdownDisplay() {
+        const banner = document.getElementById("countdown-banner");
+        const clockEl = document.getElementById("countdown-clock");
+        const labelEl = document.getElementById("countdown-label");
+        const showTimer = Boolean(liveState?.settings?.showTimer);
+
+        if (!showTimer) {
+            banner.classList.add("hidden");
+            return;
+        }
+        banner.classList.remove("hidden");
+
+        const diff = TOURNAMENT_DEADLINE.getTime() - Date.now();
+        if (diff <= 0) {
+            banner.classList.add("ended");
+            labelEl.textContent = "🏁 Предметная неделя завершена (28 ноября, 23:59):";
+            clockEl.textContent = "00д 00:00:00";
+        } else {
+            banner.classList.remove("ended");
+            labelEl.textContent = "⏳ До финала недели (28 ноября, 23:59):";
+            clockEl.textContent = formatRemainingTime(diff);
+        }
+    }
+
+    function ensureCountdownLoop() {
+        updateCountdownDisplay();
+        if (!countdownInterval) {
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+        }
+    }
+
+    function isArenaPaused() {
+        return Boolean(liveState?.settings?.arenaPaused);
+    }
+
+    /* ---------- Панель администратора ---------- */
+
+    function setAdminLog(msg, isError = false) {
+        const el = document.getElementById("admin-log");
+        if (!el) return;
+        el.style.color = isError ? "#fca5a5" : "#6ee7b7";
+        el.textContent = msg;
+    }
+
+    window.adminPopulateTeams = function() {
+        const leagueKey = document.getElementById("admin-league-select").value;
+        const teamSelect = document.getElementById("admin-team-select");
+        const classes = LEAGUES[leagueKey]?.classes || [];
+        teamSelect.innerHTML = classes.map(cls => `<option value="${cls}">${cls}</option>`).join("");
+    };
+
+    function syncAdminPanelUI() {
+        if (!isAdminUser) return;
+        const timerOn = Boolean(liveState?.settings?.showTimer);
+        const paused = isArenaPaused();
+
+        const timerStatusEl = document.getElementById("admin-timer-status");
+        timerStatusEl.textContent = timerOn ? "Таймер показан" : "Таймер скрыт";
+        timerStatusEl.className = `admin-status-pill ${timerOn ? "pill-on" : "pill-off"}`;
+
+        const timerBtn = document.getElementById("btn-toggle-timer");
+        timerBtn.textContent = timerOn ? "Скрыть таймер у игроков" : "Показать таймер (до 28 ноя, 23:59)";
+        timerBtn.className = `btn ${timerOn ? "btn-slate" : "btn-gold"}`;
+
+        const arenaStatusEl = document.getElementById("admin-arena-status");
+        arenaStatusEl.textContent = paused ? "Арена на паузе" : "Арена активна";
+        arenaStatusEl.className = `admin-status-pill ${paused ? "pill-off" : "pill-on"}`;
+
+        const pauseBtn = document.getElementById("btn-toggle-pause");
+        pauseBtn.textContent = paused ? "▶ Возобновить игру на арене" : "⏸ Поставить арену на паузу";
+        pauseBtn.className = `btn ${paused ? "btn-gold" : "btn-slate"}`;
+    }
+
+    window.adminToggleTimer = async function() {
+        if (!isAdminUser) return;
+        const nextVal = !Boolean(liveState?.settings?.showTimer);
+        try {
+            await ensureStateExists();
+            await updateDoc(tournamentRef, { "settings.showTimer": nextVal });
+            setAdminLog(nextVal ? "Таймер до 28 ноября 23:59 включён для всех игроков." : "Таймер скрыт.");
+        } catch (err) {
+            showError("Управление таймером", err);
+            setAdminLog("Не удалось переключить таймер.", true);
+        }
+    };
+
+    window.adminTogglePause = async function() {
+        if (!isAdminUser) return;
+        const nextVal = !isArenaPaused();
+        try {
+            await ensureStateExists();
+            await updateDoc(tournamentRef, { "settings.arenaPaused": nextVal });
+            setAdminLog(nextVal ? "Арена поставлена на паузу: игроки видят только билборд." : "Арена снова активна!");
+        } catch (err) {
+            showError("Пауза арены", err);
+            setAdminLog("Не удалось изменить режим паузы.", true);
+        }
+    };
+
+    window.adminAdjustTeam = async function(field) {
+        if (!isAdminUser) return;
+        const leagueKey = document.getElementById("admin-league-select").value;
+        const team = document.getElementById("admin-team-select").value;
+        const delta = parseInt(document.getElementById("admin-delta-input").value, 10);
+        if (!leagueKey || !team || Number.isNaN(delta) || delta === 0) {
+            setAdminLog("Укажите ненулевое целое число для изменения.", true);
+            return;
+        }
+        const labels = { score: "баллы", shields: "щиты", justice: "правосудие" };
+        try {
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(tournamentRef);
+                if (!snap.exists()) throw new Error("Документ leaguesState не найден");
+                const cur = Math.max(0, Number(snap.data()?.[leagueKey]?.[team]?.[field] || 0));
+                const next = Math.max(0, cur + delta);
+                tx.update(tournamentRef, { [`${leagueKey}.${team}.${field}`]: next });
+            });
+            const sign = delta > 0 ? `+${delta}` : `${delta}`;
+            setAdminLog(`Команда «${team}» (${LEAGUES[leagueKey].title}): ${labels[field]} изменены на ${sign}.`);
+        } catch (err) {
+            showError("Корректировка показателей", err);
+            setAdminLog("Ошибка при изменении показателей.", true);
+        }
+    };
+
+    window.adminExportSnapshot = function() {
+        if (!isAdminUser || !liveState) {
+            setAdminLog("Данные таблицы ещё не загружены.", true);
+            return;
+        }
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            deadline: TOURNAMENT_DEADLINE.toISOString(),
+            state: liveState
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `math-royale-backup-${getTodayKey()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setAdminLog("Резервная копия таблицы сохранена в JSON.");
+    };
+
+    window.adminResetAllScores = async function() {
+        if (!isAdminUser) return;
+        const confirmed = window.confirm("Сбросить баллы, щиты и правосудие у ВСЕХ команд во всех 3 лигах до 0? Это действие нельзя отменить.");
+        if (!confirmed) return;
+        try {
+            const fresh = buildDefaultState();
+            fresh.settings = {
+                showTimer: Boolean(liveState?.settings?.showTimer),
+                arenaPaused: Boolean(liveState?.settings?.arenaPaused)
+            };
+            await setDoc(tournamentRef, fresh);
+            setAdminLog("Все баллы, щиты и правосудие обнулены.");
+        } catch (err) {
+            showError("Сброс таблицы", err);
+            setAdminLog("Не удалось сбросить таблицу.", true);
+        }
+    };
+
     function startBillboardSubscription() {
         // Ignore queued callbacks belonging to a subscription that was replaced.
         const generation = ++billboardGeneration;
@@ -1289,6 +1692,8 @@
                 if (snap.exists()) liveState = snap.data();
                 if (!snap.exists() && !billboardFromCache) liveState = null;
                 renderBillboard();
+                updateCountdownDisplay();
+                syncAdminPanelUI();
                 updateControlsState();
                 if (!billboardFromCache) {
                     clearBillboardWait();
@@ -1417,10 +1822,31 @@
         const myToken = ++sessionToken;
         hide("auth-card");
         hide("game-card");
+        hide("admin-card");
         show("loading-card");
         document.getElementById("game-user-email").innerText = user.email || user.uid;
         currentAnswer = null;
 
+        if (isAdminEmail(user.email)) {
+            isAdminUser = true;
+            try {
+                await ensureStateExists();
+                if (myToken !== sessionToken) return;
+                hide("loading-card");
+                document.getElementById("admin-user-email").innerText = user.email || user.uid;
+                adminPopulateTeams();
+                syncAdminPanelUI();
+                setBillboardMode("all");
+                show("admin-card");
+            } catch (err) {
+                if (myToken !== sessionToken) return;
+                hide("loading-card");
+                showError("Инициализация панели администратора", err, "firestore", true);
+            }
+            return;
+        }
+
+        isAdminUser = false;
         const assignment = resolveAssignmentFromEmail(user.email);
         if (!assignment) {
             hide("loading-card");
@@ -1471,6 +1897,7 @@
             }
             playerDocRef = null;
             playerReady = false;
+            isAdminUser = false;
             elixir = 0;
             errorsToday = 0;
             errDate = "";
@@ -1484,6 +1911,7 @@
             show("auth-card");
             hide("loading-card");
             hide("game-card");
+            hide("admin-card");
         }
     });
 
@@ -1674,17 +2102,19 @@
     }
 
     function updateControlsState() {
+        const paused = isArenaPaused();
         const isBlocked = errorsToday >= MAX_ERRORS;
 
         document.getElementById("elixir-val").innerText = elixir;
         document.getElementById("errors-val").innerText = errorsToday;
         buildElixirBar();
 
-        document.getElementById("problem-section").classList.toggle("hidden", isBlocked);
-        document.getElementById("blocked-section").classList.toggle("hidden", !isBlocked);
+        document.getElementById("paused-section").classList.toggle("hidden", !paused);
+        document.getElementById("problem-section").classList.toggle("hidden", paused || isBlocked);
+        document.getElementById("blocked-section").classList.toggle("hidden", paused || !isBlocked);
 
         const hasTargets = Boolean(document.getElementById("target-select").value);
-        const ready = Boolean(currentUser) && playerReady && !busy;
+        const ready = Boolean(currentUser) && playerReady && !busy && !paused;
         document.getElementById("btn-theft").disabled = !ready || elixir < 10 || !hasTargets;
         document.getElementById("btn-justice").disabled = !ready || elixir < 5;
         document.getElementById("btn-shield").disabled = !ready || elixir < 3;
@@ -1699,7 +2129,7 @@
     }
 
     function canAct() {
-        return Boolean(currentUser && playerDocRef && playerReady && selectedLeague && selectedClass && !busy);
+        return Boolean(currentUser && playerDocRef && playerReady && selectedLeague && selectedClass && !busy && !isArenaPaused());
     }
 
     /* ---------- Игровые действия ---------- */
@@ -1885,6 +2315,7 @@
 
     renderTabEmblems();
     buildElixirBar();
+    ensureCountdownLoop();
     startBillboardSubscription();
 </script>
 </body>
