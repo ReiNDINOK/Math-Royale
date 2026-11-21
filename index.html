@@ -624,7 +624,122 @@
             .hud-top { grid-template-columns: 1fr; }
             .lives-box { text-align: left; }
         }
-    .header-banner{position:relative;padding-left:58px;padding-right:58px}.rules-trigger{position:absolute;top:12px;left:12px;min-width:44px;min-height:44px;font-size:25px;border-radius:12px;border:1px solid #a58b54;background:#443725;cursor:pointer}.rules-dialog{color:#f8fafc;background:#182235;border:2px solid #ab925c;border-radius:18px;width:min(560px,calc(100% - 28px));max-height:85vh;overflow:auto;padding:22px}.rules-dialog::backdrop{background:#000b}.rules-dialog li{margin:12px 0;line-height:1.5}.rules-close{float:right;min-height:44px;cursor:pointer}.card-theft{background:linear-gradient(145deg,#e5e7eb,#aab1bc)!important;color:#17202e;border-color:#f1f5f9!important}.card-theft .card-desc{color:#273446}.card-justice{background:linear-gradient(145deg,#785333,#382519)!important;border-color:#b4865b!important}.card-justice .card-desc{color:#f4dfc5}.art-theft{background:#ffffff35}.art-justice{background:#20120855}.btn-theft{background:#f1f5f9;color:#17202e}.btn-justice{background:#bd8859;color:#181009}.badge-justice{background:#785333;color:#ffe3bb}.badge svg{width:16px;height:16px;vertical-align:middle}.rules-trigger:focus-visible,.rules-close:focus-visible{outline:3px solid #facc15}</style>
+        /* Новые карточки: Кража и Правосудие в общей тёмно-синей стилистике арены */
+        .game-card.card-theft { border-color: rgba(52, 211, 153, 0.65); }
+        .game-card.card-justice { border-color: rgba(251, 191, 36, 0.7); }
+
+        .art-theft {
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.34) 0%, rgba(14, 21, 37, 0.96) 76%);
+        }
+        .art-justice {
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.38) 0%, rgba(14, 21, 37, 0.96) 76%);
+        }
+
+        .btn-theft {
+            background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+            border-bottom-color: #064e3b;
+        }
+        .btn-justice {
+            background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+            color: #1e1b0b;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+            border-bottom-color: #78350f;
+        }
+
+        .badge-justice {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+        }
+        .badge svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: -2px;
+        }
+
+        /* Плавающая кнопка правил в левом нижнем углу */
+        body {
+            padding-bottom: 76px;
+        }
+        .rules-trigger {
+            position: fixed;
+            bottom: 16px;
+            left: 16px;
+            z-index: 40;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            border: 2px solid var(--border-light);
+            border-bottom-width: 4px;
+            background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bg) 100%);
+            color: #fde68a;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #070b14, 0 10px 20px rgba(0, 0, 0, 0.6);
+            transition: transform 0.08s ease, filter 0.15s ease;
+        }
+        .rules-trigger:hover { filter: brightness(1.08); }
+        .rules-trigger:active {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
+        }
+        .rules-trigger svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        @media (max-width: 520px) {
+            .rules-trigger {
+                bottom: 12px;
+                left: 12px;
+                padding: 10px;
+                border-radius: 50%;
+                width: 46px;
+                height: 46px;
+                justify-content: center;
+            }
+            .rules-trigger-label {
+                display: none;
+            }
+        }
+
+        .rules-dialog {
+            color: var(--text);
+            background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bg) 100%);
+            border: 2px solid var(--gold);
+            border-radius: 18px;
+            width: min(560px, calc(100% - 28px));
+            max-height: 85vh;
+            overflow: auto;
+            padding: 22px;
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.75);
+        }
+        .rules-dialog::backdrop { background: rgba(7, 11, 20, 0.8); }
+        .rules-dialog h2 {
+            margin: 0 36px 12px 0;
+            color: var(--gold);
+            font-size: 1.25rem;
+        }
+        .rules-dialog ul {
+            padding-left: 20px;
+            margin: 0 0 16px;
+        }
+        .rules-dialog li { margin: 10px 0; line-height: 1.45; color: #e2e8f0; }
+        .rules-close {
+            float: right;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--panel-bg);
+            color: var(--text);
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .rules-trigger:focus-visible, .rules-close:focus-visible { outline: 3px solid var(--gold); }</style>
 </head>
 <body>
 <div class="app">
@@ -645,7 +760,7 @@
     <div class="card" id="billboard-card">
         <div class="header-banner">
             <h1>Math Royale</h1>
-            <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">📜</button>
+            <p class="subtitle">Предметная неделя • Верный ответ = +1 эликсир и +1 балл • 3 ошибки за день = стоп до завтра</p>
         </div>
 
         <div class="billboard-toolbar">
@@ -795,8 +910,60 @@
                     <div class="card-desc">Снимает 1 щит цели, а если щитов нет — 2 балла.</div>
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
-                <div class="game-card card-theft"><div class="card-art art-theft"><svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true"><path d="M10 27L7 6L26 17M38 17L57 6L54 28" fill="#a8afb8" stroke="#29313c" stroke-width="3"/><ellipse cx="32" cy="35" rx="26" ry="23" fill="#d6dbe1"/><path d="M7 30Q18 21 32 31Q46 21 57 30L52 43Q42 46 32 37Q22 46 12 43Z" fill="#252d38"/><circle cx="21" cy="34" r="4" fill="white"/><circle cx="43" cy="34" r="4" fill="white"/><circle cx="22" cy="34" r="2"/><circle cx="42" cy="34" r="2"/><ellipse cx="32" cy="46" rx="6" ry="4" fill="#252d38"/></svg></div><div class="card-name">Кража · 10 эл.</div><div class="card-desc">Переносит до 2 баллов цели вашей команде. Щит не мешает.</div><button class="btn btn-theft" id="btn-theft" onclick="castTheft()">Украсть баллы</button></div>
-                <div class="game-card card-justice"><div class="card-art art-justice"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><path d="M27 25L48 46" stroke="#f4d2a2" stroke-width="9" stroke-linecap="round"/><path d="M16 11L36 31M12 16L31 35M21 7L40 26" stroke="#a86b39" stroke-width="9" stroke-linecap="round"/><path d="M13 54H48L44 48H17Z" fill="#f4d2a2"/></svg></div><div class="card-name">Правосудие · 5 эл.</div><div class="card-desc">Отражает одну кражу у вашей команды.</div><button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button></div>
+                <div class="game-card card-theft">
+                    <div class="card-art art-theft">
+                        <span class="cost-pill">10 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <!-- Уши енота -->
+                            <path d="M13 24L11 9L24 16Z" fill="#64748b" stroke="#e2e8f0" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M51 24L53 9L40 16Z" fill="#64748b" stroke="#e2e8f0" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M14 21L13 13L21 17Z" fill="#1e293b"/>
+                            <path d="M50 21L51 13L43 17Z" fill="#1e293b"/>
+                            <!-- Голова енота -->
+                            <path d="M32 14C20 14 11 22 10 34C9 45 20 53 32 54C44 53 55 45 54 34C53 22 44 14 32 14Z" fill="#94a3b8" stroke="#f1f5f9" stroke-width="2"/>
+                            <!-- Полоска на лбу -->
+                            <path d="M32 15V26" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                            <!-- Бандитская маска-повязка воришки -->
+                            <path d="M11 31C16 26 25 27 32 30C39 27 48 26 53 31L51 40C45 43 38 41 32 37C26 41 19 43 13 40L11 31Z" fill="#0f172a" stroke="#34d399" stroke-width="1.6"/>
+                            <!-- Узелок повязки сбоку -->
+                            <path d="M53 32L59 28M53 34L60 36" stroke="#34d399" stroke-width="2.2" stroke-linecap="round"/>
+                            <!-- Хитрые глаза -->
+                            <ellipse cx="22" cy="34" rx="4.2" ry="3.2" fill="#f8fafc"/>
+                            <ellipse cx="42" cy="34" rx="4.2" ry="3.2" fill="#f8fafc"/>
+                            <circle cx="23" cy="34" r="1.8" fill="#0f172a"/>
+                            <circle cx="41" cy="34" r="1.8" fill="#0f172a"/>
+                            <!-- Светлая мордочка и нос -->
+                            <ellipse cx="32" cy="45" rx="9" ry="6.5" fill="#f1f5f9"/>
+                            <ellipse cx="32" cy="43" rx="3.8" ry="2.6" fill="#0f172a"/>
+                            <path d="M28 48Q32 51 36 48" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Кража</div>
+                    <div class="card-desc">Переносит до 2 баллов цели вашей команде. Щит не мешает.</div>
+                    <button class="btn btn-theft" id="btn-theft" onclick="castTheft()">Украсть баллы</button>
+                </div>
+
+                <div class="game-card card-justice">
+                    <div class="card-art art-justice">
+                        <span class="cost-pill">5 эл.</span>
+                        <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+                            <!-- Рукоятка судейского молотка -->
+                            <path d="M31 27L51 47" stroke="#b45309" stroke-width="6.5" stroke-linecap="round"/>
+                            <path d="M31 27L51 47" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/>
+                            <!-- Головка молотка -->
+                            <rect x="13" y="21" width="24" height="13" rx="3" transform="rotate(-45 13 21)" fill="#d97706" stroke="#fef3c7" stroke-width="2"/>
+                            <!-- Золотые ободки на бойках -->
+                            <path d="M12 22L21 31" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
+                            <path d="M24 10L33 19" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round"/>
+                            <!-- Звуковая подставка судьи -->
+                            <path d="M12 53H44L40 47H16L12 53Z" fill="#92400e" stroke="#fde68a" stroke-width="2" stroke-linejoin="round"/>
+                            <rect x="9" y="53" width="38" height="4" rx="2" fill="#d97706" stroke="#fef3c7" stroke-width="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="card-name">Правосудие</div>
+                    <div class="card-desc">Отражает одну кражу у вашей команды.</div>
+                    <button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button>
+                </div>
             </div>
 
             <div class="strike-target-wrap">
@@ -808,6 +975,14 @@
         <div class="status-log" id="status-log"></div>
     </div>
 </div>
+
+<button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M6 3H16C17.6569 3 19 4.34315 19 6V18C19 19.6569 17.6569 21 16 21H7C5.34315 21 4 19.6569 4 18V5C4 3.89543 4.89543 3 6 3Z" fill="#78350f" stroke="#fbbf24" stroke-width="2"/>
+        <path d="M8 8H15M8 12H15M8 16H12" stroke="#fef3c7" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <span class="rules-trigger-label">Правила</span>
+</button>
 
 <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит — 3 эликсира: отражает один огненный шар.</li><li>Ускорение — 4 эликсира: +3 балла своей команде.</li><li>Огненный шар — 6 эликсира: снимает один щит, а без щита — до 2 баллов цели.</li><li>Кража — 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие — 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки — другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
 <script type="module">
@@ -1372,7 +1547,7 @@
                         <strong>${place}. ${item.cls}</strong>
                         ${medalHtml}
                         ${shieldHtml}
-                        ${item.justice > 0 ? `<span class="badge badge-justice" title="Правосудие" aria-label="Правосудие: ${item.justice}"><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true"><path d="M27 25L48 46" stroke="#f4d2a2" stroke-width="9" stroke-linecap="round"/><path d="M16 11L36 31M12 16L31 35M21 7L40 26" stroke="#a86b39" stroke-width="9" stroke-linecap="round"/><path d="M13 54H48L44 48H17Z" fill="#f4d2a2"/></svg> ×${item.justice}</span>` : ""}
+                        ${item.justice > 0 ? `<span class="badge badge-justice" title="Правосудие" aria-label="Правосудие: ${item.justice}"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M31 27L51 47" stroke="#fde68a" stroke-width="7" stroke-linecap="round"/><rect x="13" y="21" width="24" height="13" rx="3" transform="rotate(-45 13 21)" fill="#f59e0b" stroke="#fef3c7" stroke-width="2.5"/><path d="M10 54H46" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/></svg> ×${item.justice}</span>` : ""}
                     </div>
                     <div class="score-val">${item.score}</div>
                 </div>
