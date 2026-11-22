@@ -2693,14 +2693,14 @@
         const btn = document.getElementById("login-submit-btn");
 
         errEl.innerText = "";
+        clearErrors();
         btn.disabled = true;
         try {
             await signInWithEmailAndPassword(auth, email, password);
         } catch (err) {
             const code = formatErrorCode(err, "auth");
-            const hint = errorHint(code);
-            errEl.innerText = `${hint || "Не удалось войти."} Код: ${code}`;
-            showError("Вход (Auth)", err, "auth");
+            console.error(`[Вход (Auth)] (${code})`, err);
+            errEl.innerText = friendlyErrorMessage(code);
         } finally {
             btn.disabled = false;
         }
@@ -2748,7 +2748,7 @@
             hide("loading-card");
             showError(
                 "Определение класса по логину",
-                { code: "auth/invalid-team-email", message: `Логин «${user.email || ""}» не содержит распознанный класс или имя участника.` },
+                { code: "auth/invalid-team-email", message: `Логин «${user.email || ""}» без класса` },
                 "auth",
                 true
             );
