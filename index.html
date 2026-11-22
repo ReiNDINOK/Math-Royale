@@ -469,11 +469,13 @@
             margin-bottom: 12px;
             box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.45);
         }
-        .problem-box sup {
+        .problem-box sup,
+        .problem-box sub {
             font-size: 0.62em;
             line-height: 0;
-            vertical-align: super;
         }
+        .problem-box sup { vertical-align: super; }
+        .problem-box sub { vertical-align: sub; }
         input[type="number"], input[type="email"], input[type="password"], .password-field input[type="text"], select {
             width: 100%;
             padding: 12px;
@@ -1731,7 +1733,7 @@
         league_5_7: {
             title: "5–7 классы",
             prizesCount: 3,
-            classes: ["5", "6", "7", "Сергей", "Лина", "Катя", "Олег", "Вячеслав"]
+            classes: ["5", "6", "7", "Сергей", "Лина", "Катя", "Олег"]
         },
         league_8_9: {
             title: "8 и 9А/9Б",
@@ -2951,6 +2953,8 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    let currentProblemText = "";
+
     function generateProblem() {
         if (!playerReady || errorsToday >= MAX_ERRORS || !selectedLeague) return;
 
@@ -2961,15 +2965,18 @@
             if (type === 1) {
                 const a = randInt(15, 85), b = randInt(12, 65);
                 currentAnswer = a + b;
-                el.innerText = `${a} + ${b} = ?`;
+                currentProblemText = `${a} + ${b} = ?`;
+                el.textContent = currentProblemText;
             } else if (type === 2) {
                 const a = randInt(40, 120), b = randInt(10, 39);
                 currentAnswer = a - b;
-                el.innerText = `${a} - ${b} = ?`;
+                currentProblemText = `${a} - ${b} = ?`;
+                el.textContent = currentProblemText;
             } else {
                 const a = randInt(3, 12), b = randInt(3, 12);
                 currentAnswer = a * b;
-                el.innerText = `${a} × ${b} = ?`;
+                currentProblemText = `${a} × ${b} = ?`;
+                el.textContent = currentProblemText;
             }
         } else if (selectedLeague === "league_8_9") {
             const type = randInt(1, 3);
@@ -2977,19 +2984,22 @@
                 const root = randInt(4, 15);
                 const add = randInt(5, 30);
                 currentAnswer = root + add;
-                el.innerText = `√${root * root} + ${add} = ?`;
+                currentProblemText = `√${root * root} + ${add} = ?`;
+                el.textContent = currentProblemText;
             } else if (type === 2) {
                 const base = randInt(2, 6);
                 const exp = randInt(2, 4);
                 const sub = randInt(1, 10);
                 currentAnswer = Math.pow(base, exp) - sub;
+                currentProblemText = `${base}^${exp} - ${sub} = ?`;
                 el.innerHTML = `${base}<sup>${exp}</sup> - ${sub} = ?`;
             } else {
                 const x = randInt(2, 15);
                 const k = randInt(2, 6);
                 const b = randInt(3, 20);
                 currentAnswer = x;
-                el.innerText = `${k}x + ${b} = ${k * x + b}; x = ?`;
+                currentProblemText = `${k}x + ${b} = ${k * x + b}; x = ?`;
+                el.textContent = currentProblemText;
             }
         } else {
             const type = randInt(1, 3);
@@ -2997,17 +3007,20 @@
                 const base = randInt(2, 5);
                 const exp = randInt(3, 5);
                 currentAnswer = exp;
-                el.innerText = `log_${base}(${Math.pow(base, exp)}) = ?`;
+                currentProblemText = `log_${base}(${Math.pow(base, exp)}) = ?`;
+                el.innerHTML = `log<sub>${base}</sub>(${Math.pow(base, exp)}) = ?`;
             } else if (type === 2) {
                 const a1 = randInt(2, 12);
                 const d = randInt(2, 7);
                 const n = randInt(4, 8);
                 currentAnswer = a1 + (n - 1) * d;
-                el.innerText = `a₁=${a1}, d=${d} → a_${n} = ?`;
+                currentProblemText = `a₁=${a1}, d=${d} → a_${n} = ?`;
+                el.innerHTML = `a<sub>1</sub>=${a1}, d=${d} → a<sub>${n}</sub> = ?`;
             } else {
                 const x = randInt(3, 12);
                 currentAnswer = x * x - 4;
-                el.innerText = `f(${x}) при f(t) = t² - 4`;
+                currentProblemText = `f(${x}) при f(t) = t² - 4`;
+                el.innerHTML = `f(${x}) при f(t) = t<sup>2</sup> - 4`;
             }
         }
 
@@ -3052,12 +3065,16 @@
     window.submitAnswer = async function() {
         if (!canAct() || errorsToday >= MAX_ERRORS || currentAnswer === null) return;
         const input = document.getElementById("answer-input");
-        const val = parseInt(input.value, 10);
+        const rawText = String(input.value || "").trim();
+        if (!rawText || !/^[+-]?\d+$/.test(rawText)) return;
+        const val = parseInt(rawText, 10);
         if (Number.isNaN(val)) return;
 
         const today = getTodayKey();
         const activeErrors = errDate === today ? errorsToday : 0;
         const answerAtSubmit = currentAnswer;
+        const problemAtSubmit = currentProblemText;
+        currentAnswer = null;
 
         setBusy(true);
         try {
@@ -3101,11 +3118,13 @@
                     currentAnswer = null;
                     setLog("3-я ошибка за день зафиксирована в аккаунте - новые примеры закрыты до завтра.");
                 } else {
-                    setLog(`Мимо! Правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - nextErr}.`);
+                    const label = problemAtSubmit ? ` (${problemAtSubmit})` : "";
+                    setLog(`Мимо${label}! Введено: ${val}, правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - nextErr}.`);
                     generateProblem();
                 }
             }
         } catch (err) {
+            currentAnswer = answerAtSubmit;
             showError("Ответ на пример", err);
             setLog("Не удалось сохранить результат: данные не изменились.");
         } finally {
