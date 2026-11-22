@@ -1354,15 +1354,15 @@
         <div class="tabs" id="single-league-tabs">
             <button class="tab-btn active" data-league="league_5_7" onclick="switchBoardLeague('league_5_7')">
                 <span class="emblem-slot" data-emblem="league_5_7"></span>
-                <span>5–7 классы</span>
+                <span>5-7</span>
             </button>
             <button class="tab-btn" data-league="league_8_9" onclick="switchBoardLeague('league_8_9')">
                 <span class="emblem-slot" data-emblem="league_8_9"></span>
-                <span>8 и 9А/9Б</span>
+                <span>8-9</span>
             </button>
             <button class="tab-btn" data-league="league_10_11" onclick="switchBoardLeague('league_10_11')">
                 <span class="emblem-slot" data-emblem="league_10_11"></span>
-                <span>10–11 классы</span>
+                <span>10-11</span>
             </button>
         </div>
 
@@ -1433,7 +1433,7 @@
             <strong>Лимит ошибок на сегодня исчерпан (3/3).</strong>
             <p style="margin:6px 0 0; color:var(--muted);">Решать новые примеры и получать баллы за них можно будет завтра.</p>
             <div class="blocked-timer-wrap" role="timer" aria-live="off">
-                <span>⏳ До восстановления попыток:</span>
+                <span>⏳ До сброса ошибок (00:00, UTC+5):</span>
                 <span class="blocked-timer-clock" id="daily-reset-clock">--:--:--</span>
             </div>
         </div>
@@ -1589,9 +1589,9 @@
             <div class="admin-section-title">Корректировка показателей команды</div>
             <div class="admin-row" style="margin-bottom:8px;">
                 <select id="admin-league-select" onchange="adminPopulateTeams()">
-                    <option value="league_5_7">5–7 классы</option>
-                    <option value="league_8_9">8 и 9А/9Б</option>
-                    <option value="league_10_11">10–11 классы</option>
+                    <option value="league_5_7">5-7</option>
+                    <option value="league_8_9">8-9</option>
+                    <option value="league_10_11">10-11</option>
                 </select>
                 <select id="admin-team-select"></select>
                 <input type="number" id="admin-delta-input" value="1" step="1" placeholder="± значение">
@@ -1610,9 +1610,9 @@
             <div class="admin-section-title">Сброс ошибок за день по лиге</div>
             <div class="admin-row">
                 <select id="admin-reset-errors-league">
-                    <option value="league_5_7">5–7 классы</option>
-                    <option value="league_8_9">8 и 9А/9Б</option>
-                    <option value="league_10_11">10–11 классы</option>
+                    <option value="league_5_7">5-7</option>
+                    <option value="league_8_9">8-9</option>
+                    <option value="league_10_11">10-11</option>
                 </select>
                 <button type="button" class="btn btn-gold" id="btn-reset-league-errors" onclick="adminResetLeagueErrors()">
                     Сбросить ошибки лиги
@@ -1731,30 +1731,25 @@
 
     const LEAGUES = {
         league_5_7: {
-            title: "5–7 классы",
+            title: "5-7",
             prizesCount: 3,
-            classes: ["5", "6", "7", "Сергей", "Лина", "Катя", "Олег"]
+            classes: ["5", "6", "7"]
         },
         league_8_9: {
-            title: "8 и 9А/9Б",
+            title: "8-9",
             prizesCount: 3,
             classes: ["8", "9А", "9Б"]
         },
         league_10_11: {
-            title: "10–11 классы",
+            title: "10-11",
             prizesCount: 2,
             classes: ["10", "11"]
         }
     };
 
     // Карта соответствия кодов в email (до @) -> лига и команда
-    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, sergey@math.local, oleg@math.local и т.п.
+    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, petrov-10@math.local и т.п.
     const EMAIL_TEAM_TOKENS = [
-        { token: "sergey", league: "league_5_7", team: "Сергей" },
-        { token: "lina",   league: "league_5_7", team: "Лина" },
-        { token: "katya",  league: "league_5_7", team: "Катя" },
-        { token: "oleg",   league: "league_5_7", team: "Олег" },
-        { token: "vyacheslav", league: "league_5_7", team: "Вячеслав" },
         { token: "10",     league: "league_10_11", team: "10" },
         { token: "11",     league: "league_10_11", team: "11" },
         { token: "9a",     league: "league_8_9", team: "9А" },
@@ -1770,7 +1765,7 @@
     function resolveAssignmentFromEmail(email) {
         if (!email) return null;
         const localPart = String(email).toLowerCase().split("@")[0] || "";
-        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sergey, oleg
+        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sidorov-10
         const parts = localPart.split(/[._-]+/).filter(Boolean);
 
         // Проверяем с конца (обычно класс указывают в конце: ivanov.5, smirnova.9b), затем по всем сегментам
@@ -1843,7 +1838,7 @@
         if (code.includes("failed-precondition")) return "Конфликт условий операции. Попробуйте ещё раз.";
         if (code.includes("not-found")) return "Документ mathRoyale/leaguesState не найден в Firestore.";
         if (code.includes("unauthenticated")) return "Пользователь не авторизован. Войдите заново.";
-        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local, petrov.9b@math.local, sergey@math.local или oleg@math.local.";
+        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local или petrov.9b@math.local.";
         return "";
     }
 
