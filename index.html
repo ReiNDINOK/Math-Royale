@@ -744,15 +744,22 @@
             vertical-align: -2px;
         }
 
-        /* Плавающая кнопка правил в левом нижнем углу */
+        /* Плавающий стек кнопок в левом нижнем углу: Профиль над Правилами */
         body {
-            padding-bottom: 76px;
+            padding-bottom: 132px;
         }
-        .rules-trigger {
+        .corner-triggers {
             position: fixed;
             bottom: 16px;
             left: 16px;
             z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .rules-trigger {
+            position: relative;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -768,6 +775,10 @@
             box-shadow: 0 6px 0 #070b14, 0 10px 20px rgba(0, 0, 0, 0.6);
             transition: transform 0.08s ease, filter 0.15s ease;
         }
+        .rules-trigger.profile-trigger {
+            border-color: rgba(251, 191, 36, 0.65);
+            color: #fef3c7;
+        }
         .rules-trigger:hover { filter: brightness(1.08); }
         .rules-trigger:active {
             transform: translateY(2px);
@@ -778,19 +789,211 @@
             height: 20px;
             flex-shrink: 0;
         }
+        .profile-count-pill {
+            background: linear-gradient(180deg, #fcd34d 0%, #d97706 100%);
+            color: #1e1b0b;
+            font-size: 0.72rem;
+            font-weight: 900;
+            padding: 1px 6px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+        }
         @media (max-width: 520px) {
-            .rules-trigger {
+            .corner-triggers {
                 bottom: 12px;
                 left: 12px;
+                gap: 8px;
+            }
+            .rules-trigger {
                 padding: 10px;
                 border-radius: 50%;
                 width: 46px;
                 height: 46px;
                 justify-content: center;
             }
-            .rules-trigger-label {
+            .rules-trigger-label, .profile-count-pill {
                 display: none;
             }
+        }
+
+        /* Всплывающая карточка достижения в стиле Clash Royale */
+        .ach-toast-stack {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: min(360px, calc(100vw - 32px));
+            pointer-events: none;
+        }
+        .ach-toast-card {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, #2a243d 0%, #161b2e 100%);
+            border: 2px solid var(--gold);
+            border-bottom-width: 5px;
+            border-bottom-color: var(--gold-dark);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.75), inset 0 0 18px rgba(251, 191, 36, 0.22);
+            animation: achSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            cursor: pointer;
+        }
+        .ach-toast-card.hiding {
+            animation: achSlideOut 0.28s ease forwards;
+        }
+        @keyframes achSlideIn {
+            from { opacity: 0; transform: translateX(36px) scale(0.95); }
+            to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes achSlideOut {
+            from { opacity: 1; transform: translateX(0) scale(1); }
+            to { opacity: 0; transform: translateX(36px) scale(0.95); }
+        }
+        .ach-medal {
+            width: 52px;
+            height: 52px;
+            flex-shrink: 0;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.34) 0%, rgba(14, 21, 37, 0.95) 78%);
+            border: 1.5px solid rgba(251, 191, 36, 0.65);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+        }
+        .ach-medal svg {
+            width: 34px;
+            height: 34px;
+        }
+        .ach-toast-body {
+            flex: 1;
+            min-width: 0;
+        }
+        .ach-toast-tag {
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: #fde68a;
+            margin-bottom: 2px;
+        }
+        .ach-toast-title {
+            font-size: 1.02rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--gold);
+            text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+            line-height: 1.15;
+        }
+        .ach-toast-desc {
+            margin-top: 3px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            line-height: 1.25;
+        }
+
+        /* Окно профиля и сетка достижений */
+        .profile-dialog {
+            width: min(680px, calc(100% - 24px));
+        }
+        .profile-summary-box {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            background: var(--panel-bg);
+            border: 1.5px solid var(--border-light);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        .profile-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .profile-stat-pill {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        .profile-stat-num {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--gold);
+        }
+        .profile-stat-lbl {
+            font-size: 0.74rem;
+            color: var(--muted);
+        }
+        .ach-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .ach-card {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 11px 12px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #1b253b 0%, var(--panel-bg) 100%);
+            border: 2px solid var(--border);
+            box-shadow: 0 5px 0 #070b14;
+        }
+        .ach-card.unlocked {
+            border-color: var(--gold);
+            background: linear-gradient(180deg, #2a243d 0%, #151a2c 100%);
+            box-shadow: 0 5px 0 #070b14, inset 0 0 14px rgba(251, 191, 36, 0.14);
+        }
+        .ach-card.locked {
+            opacity: 0.52;
+            filter: grayscale(0.75);
+        }
+        .ach-card .ach-medal {
+            width: 46px;
+            height: 46px;
+        }
+        .ach-card .ach-medal svg {
+            width: 30px;
+            height: 30px;
+        }
+        .ach-card-title {
+            font-size: 0.92rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--gold);
+            line-height: 1.15;
+        }
+        .ach-card.locked .ach-card-title {
+            color: #cbd5e1;
+        }
+        .ach-card-desc {
+            margin-top: 3px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--muted);
+            line-height: 1.25;
+        }
+        .ach-card.unlocked .ach-card-desc {
+            color: #e2e8f0;
+        }
+        @media (max-width: 580px) {
+            .ach-grid { grid-template-columns: 1fr; }
+            .profile-stats-row { grid-template-columns: 1fr; }
         }
 
         .rules-dialog {
@@ -1092,7 +1295,7 @@
             <strong>Лимит ошибок на сегодня исчерпан (3/3).</strong>
             <p style="margin:6px 0 0; color:var(--muted);">Решать новые примеры и получать баллы за них можно будет завтра.</p>
             <div class="blocked-timer-wrap" role="timer" aria-live="off">
-                <span>⏳ До восстановления попыток:</span>
+                <span>⏳ До сброса ошибок (00:00, UTC+5):</span>
                 <span class="blocked-timer-clock" id="daily-reset-clock">--:--:--</span>
             </div>
         </div>
@@ -1296,13 +1499,54 @@
     </div>
 </div>
 
-<button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M6 3H16C17.6569 3 19 4.34315 19 6V18C19 19.6569 17.6569 21 16 21H7C5.34315 21 4 19.6569 4 18V5C4 3.89543 4.89543 3 6 3Z" fill="#78350f" stroke="#fbbf24" stroke-width="2"/>
-        <path d="M8 8H15M8 12H15M8 16H12" stroke="#fef3c7" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-    <span class="rules-trigger-label">Правила</span>
-</button>
+<div class="ach-toast-stack" id="ach-toast-stack" aria-live="polite"></div>
+
+<div class="corner-triggers">
+    <button class="rules-trigger profile-trigger hidden" id="profile-trigger-btn" type="button" aria-label="Открыть профиль и достижения" title="Профиль и достижения" onclick="openProfileModal()">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="8" r="4" fill="#fbbf24" stroke="#fef3c7" stroke-width="1.8"/>
+            <path d="M5 20C5 16.4 8.1 14 12 14C15.9 14 19 16.4 19 20" fill="#d97706" stroke="#fef3c7" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <span class="rules-trigger-label">Профиль</span>
+        <span class="profile-count-pill" id="profile-ach-count">0/20</span>
+    </button>
+
+    <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 3H16C17.6569 3 19 4.34315 19 6V18C19 19.6569 17.6569 21 16 21H7C5.34315 21 4 19.6569 4 18V5C4 3.89543 4.89543 3 6 3Z" fill="#78350f" stroke="#fbbf24" stroke-width="2"/>
+            <path d="M8 8H15M8 12H15M8 16H12" stroke="#fef3c7" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="rules-trigger-label">Правила</span>
+    </button>
+</div>
+
+<dialog id="profile-dialog" class="rules-dialog profile-dialog" aria-labelledby="profile-title">
+    <button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть профиль">✕</button>
+    <h2 id="profile-title">🏅 Профиль и достижения</h2>
+    <div class="profile-summary-box">
+        <div>
+            <div style="font-weight:900; color:#fde68a;" id="profile-player-name">Участник</div>
+            <div style="font-size:0.82rem; color:var(--muted);" id="profile-player-team">Команда не выбрана</div>
+        </div>
+        <span class="badge badge-gold" id="profile-progress-badge">Открыто: 0 из 20</span>
+    </div>
+    <div class="profile-stats-row">
+        <div class="profile-stat-pill">
+            <div class="profile-stat-num" id="stat-solved-total">0</div>
+            <div class="profile-stat-lbl">Решено примеров</div>
+        </div>
+        <div class="profile-stat-pill">
+            <div class="profile-stat-num" id="stat-streak-best">0</div>
+            <div class="profile-stat-lbl">Лучшая серия</div>
+        </div>
+        <div class="profile-stat-pill">
+            <div class="profile-stat-num" id="stat-cards-used">0</div>
+            <div class="profile-stat-lbl">Сыграно карт</div>
+        </div>
+    </div>
+    <div class="ach-grid" id="profile-ach-grid"></div>
+    <form method="dialog"><button class="btn btn-gold">Закрыть</button></form>
+</dialog>
 
 <dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит - 3 эликсира: отражает один огненный шар.</li><li>Ускорение - 4 эликсира: +3 балла своей команде.</li><li>Огненный шар - 6 эликсира: снимает один щит, а без щита - до 2 баллов цели.</li><li>Кража - 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие - 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки - другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
 <script type="module">
@@ -1924,11 +2168,182 @@
 
     /* ---------- Состояние игрока (playerStates/{uid}) ---------- */
 
+    /* ---------- Система достижений (20 тестовых ачивок) ---------- */
+
+    const MEDAL_SVGS = {
+        bronze: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#3b82f6"/><path d="M32 4H26L24 14H30L32 4Z" fill="#ef4444"/><circle cx="24" cy="28" r="14" fill="#d97706" stroke="#fde68a" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#92400e"/><path d="M24 21L26.2 25.5L31 26.2L27.5 29.6L28.3 34.4L24 32.1L19.7 34.4L20.5 29.6L17 26.2L21.8 25.5L24 21Z" fill="#fcd34d"/></svg>`,
+        silver: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#2563eb"/><path d="M32 4H26L24 14H30L32 4Z" fill="#60a5fa"/><circle cx="24" cy="28" r="14" fill="#cbd5e1" stroke="#f8fafc" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#64748b"/><path d="M24 21L26.2 25.5L31 26.2L27.5 29.6L28.3 34.4L24 32.1L19.7 34.4L20.5 29.6L17 26.2L21.8 25.5L24 21Z" fill="#ffffff"/></svg>`,
+        gold: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M15 4H22L24 14H17L15 4Z" fill="#dc2626"/><path d="M33 4H26L24 14H31L33 4Z" fill="#f59e0b"/><circle cx="24" cy="28" r="14" fill="#fbbf24" stroke="#fef9c3" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#b45309"/><path d="M24 20.5L26.5 25.5L32 26.3L28 30.2L28.9 35.6L24 33L19.1 35.6L20 30.2L16 26.3L21.5 25.5L24 20.5Z" fill="#fef08a"/></svg>`,
+        elixir: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#a855f7"/><path d="M32 4H26L24 14H30L32 4Z" fill="#ec4899"/><circle cx="24" cy="28" r="14" fill="#d946ef" stroke="#f5d0fe" stroke-width="2.5"/><path d="M24 18C24 18 17 26 17 30.5C17 34.4 20.1 37.5 24 37.5C27.9 37.5 31 34.4 31 30.5C31 26 24 18 24 18Z" fill="#fdf4ff"/></svg>`,
+        emerald: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#059669"/><path d="M32 4H26L24 14H30L32 4Z" fill="#34d399"/><circle cx="24" cy="28" r="14" fill="#10b981" stroke="#d1fae5" stroke-width="2.5"/><polygon points="24,18 32,28 24,38 16,28" fill="#ecfdf5"/></svg>`
+    };
+
+    const ACHIEVEMENTS = [
+        { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", check: s => s.solvedTotal >= 1 },
+        { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", check: s => s.solvedTotal >= 5 },
+        { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 10 },
+        { id: "quarter_hundred", title: "ЧЕТВЕРТЬ СОТНИ", desc: "Реши 25 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 25 },
+        { id: "half_hundred", title: "ПОЛСОТНИ ПОБЕД", desc: "Реши 50 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 50 },
+        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши ровно 67 примеров", medal: "elixir", check: s => s.solvedTotal >= 67 },
+        { id: "centurion", title: "ЦЕНТУРИОН АРЕНЫ", desc: "Реши 100 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 100 },
+        { id: "streak_3", title: "СЕРИЯ ТРЁХ", desc: "Реши 3 примера подряд без ошибок", medal: "bronze", check: s => s.bestStreak >= 3 },
+        { id: "streak_7", title: "СНАЙПЕР", desc: "Реши 7 примеров подряд без ошибок", medal: "silver", check: s => s.bestStreak >= 7 },
+        { id: "streak_15", title: "НЕПОБЕДИМЫЙ", desc: "Реши 15 примеров подряд без ошибок", medal: "gold", check: s => s.bestStreak >= 15 },
+        { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум — 10 капель эликсира", medal: "elixir", check: s => s.maxElixirReached >= 10 },
+        { id: "first_card", title: "ТАКТИК", desc: "Примени любую карту эликсира в первый раз", medal: "bronze", check: s => s.cardsUsed >= 1 },
+        { id: "card_master", title: "МАСТЕР КОЛОДЫ", desc: "Примени карты эликсира 10 раз", medal: "gold", check: s => s.cardsUsed >= 10 },
+        { id: "first_shield", title: "КАМЕННАЯ СТЕНА", desc: "Активируй карту «Щит башни» в первый раз", medal: "silver", check: s => s.shieldsUsed >= 1 },
+        { id: "first_boost", title: "ФОРСАЖ", desc: "Примени карту «Ускорение» в первый раз", medal: "silver", check: s => s.boostsUsed >= 1 },
+        { id: "first_justice", title: "МОЛОТ ЗАКОНА", desc: "Примени карту «Правосудие» в первый раз", medal: "gold", check: s => s.justiceUsed >= 1 },
+        { id: "first_fireball", title: "ПИРОМАНТ", desc: "Запусти «Огненный шар» в первый раз", medal: "silver", check: s => s.strikesUsed >= 1 },
+        { id: "swiper_no_swiping", title: "ЖУЛИК, НЕ ВОРУЙ", desc: "Примени навык «Кража» в первый раз", medal: "emerald", check: s => s.theftsUsed >= 1 },
+        { id: "master_thief", title: "ТЕНЬ АРЕНЫ", desc: "Примени навык «Кража» 3 раза", medal: "emerald", check: s => s.theftsUsed >= 3 },
+        { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", check: s => s.solvedOnEdge >= 1 }
+    ];
+
+    function defaultStats() {
+        return {
+            solvedTotal: 0,
+            currentStreak: 0,
+            bestStreak: 0,
+            maxElixirReached: 0,
+            cardsUsed: 0,
+            shieldsUsed: 0,
+            boostsUsed: 0,
+            justiceUsed: 0,
+            strikesUsed: 0,
+            theftsUsed: 0,
+            solvedOnEdge: 0
+        };
+    }
+
+    let playerStats = defaultStats();
+    let unlockedAchievements = {};
+    let shownToastIds = new Set();
+
+    function updateProfileCounterUI() {
+        const count = Object.keys(unlockedAchievements).length;
+        const total = ACHIEVEMENTS.length;
+        const pill = document.getElementById("profile-ach-count");
+        if (pill) pill.textContent = `${count}/${total}`;
+        const badge = document.getElementById("profile-progress-badge");
+        if (badge) badge.textContent = `Открыто: ${count} из ${total}`;
+    }
+
+    function showAchievementToast(ach) {
+        const stack = document.getElementById("ach-toast-stack");
+        if (!stack) return;
+        const card = document.createElement("div");
+        card.className = "ach-toast-card";
+        card.setAttribute("role", "status");
+        card.innerHTML = `
+            <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
+            <div class="ach-toast-body">
+                <div class="ach-toast-tag">Новое достижение!</div>
+                <div class="ach-toast-title"></div>
+                <div class="ach-toast-desc"></div>
+            </div>
+        `;
+        card.querySelector(".ach-toast-title").textContent = ach.title;
+        card.querySelector(".ach-toast-desc").textContent = ach.desc;
+
+        const dismiss = () => {
+            if (card.classList.contains("hiding")) return;
+            card.classList.add("hiding");
+            setTimeout(() => card.remove(), 280);
+        };
+        card.addEventListener("click", dismiss);
+        stack.appendChild(card);
+        setTimeout(dismiss, 5200);
+    }
+
+    async function evaluateAndSaveProgress(statDelta = {}, overrides = {}) {
+        if (!currentUser || !playerDocRef) return;
+        const nextStats = { ...playerStats };
+        for (const [k, v] of Object.entries(statDelta)) {
+            nextStats[k] = Math.max(0, Number(nextStats[k] || 0) + Number(v));
+        }
+        for (const [k, v] of Object.entries(overrides)) {
+            nextStats[k] = v;
+        }
+        if (nextStats.currentStreak > nextStats.bestStreak) {
+            nextStats.bestStreak = nextStats.currentStreak;
+        }
+        if (elixir > nextStats.maxElixirReached) {
+            nextStats.maxElixirReached = elixir;
+        }
+        playerStats = nextStats;
+
+        const newlyUnlocked = [];
+        const nextUnlocked = { ...unlockedAchievements };
+        const nowIso = new Date().toISOString();
+
+        for (const ach of ACHIEVEMENTS) {
+            if (!nextUnlocked[ach.id] && ach.check(nextStats)) {
+                nextUnlocked[ach.id] = nowIso;
+                newlyUnlocked.push(ach);
+            }
+        }
+        unlockedAchievements = nextUnlocked;
+        updateProfileCounterUI();
+
+        for (const ach of newlyUnlocked) {
+            if (!shownToastIds.has(ach.id)) {
+                shownToastIds.add(ach.id);
+                showAchievementToast(ach);
+            }
+        }
+
+        try {
+            await setDoc(playerDocRef, {
+                stats: nextStats,
+                unlockedAchievements: nextUnlocked
+            }, { merge: true });
+        } catch (err) {
+            console.warn("[Сохранение достижений]", err);
+        }
+    }
+
+    window.openProfileModal = function() {
+        if (!currentUser) return;
+        document.getElementById("profile-player-name").textContent = currentUser.email || "Участник";
+        const leagueTitle = selectedLeague ? (LEAGUES[selectedLeague]?.title || selectedLeague) : "Лига не определена";
+        document.getElementById("profile-player-team").textContent = selectedClass ? `${leagueTitle} • Команда «${selectedClass}»` : leagueTitle;
+
+        document.getElementById("stat-solved-total").textContent = playerStats.solvedTotal || 0;
+        document.getElementById("stat-streak-best").textContent = playerStats.bestStreak || 0;
+        document.getElementById("stat-cards-used").textContent = playerStats.cardsUsed || 0;
+        updateProfileCounterUI();
+
+        const grid = document.getElementById("profile-ach-grid");
+        grid.innerHTML = ACHIEVEMENTS.map(ach => {
+            const isUnlocked = Boolean(unlockedAchievements[ach.id]);
+            return `
+                <div class="ach-card ${isUnlocked ? "unlocked" : "locked"}">
+                    <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
+                    <div style="min-width:0; flex:1;">
+                        <div class="ach-card-title">${ach.title}</div>
+                        <div class="ach-card-desc">${ach.desc}</div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        document.getElementById("profile-dialog").showModal();
+    };
+
     function applyPlayerData(d) {
         const today = getTodayKey();
         elixir = Math.min(MAX_ELIXIR, Math.max(0, Number(d.elixir || 0)));
         errDate = d.errDate || today;
         errorsToday = errDate === today ? Math.max(0, Number(d.errorsToday || 0)) : 0;
+        playerStats = { ...defaultStats(), ...(d.stats || {}) };
+        if (elixir > playerStats.maxElixirReached) playerStats.maxElixirReached = elixir;
+        unlockedAchievements = { ...(d.unlockedAchievements || {}) };
+        for (const id of Object.keys(unlockedAchievements)) {
+            shownToastIds.add(id);
+        }
+        updateProfileCounterUI();
     }
 
     async function loadPlayerState(user, assignment) {
@@ -2114,6 +2529,11 @@
                 togglePasswordBtn.title = "Показать пароль";
                 togglePasswordBtn.setAttribute("aria-label", "Показать пароль");
             }
+            playerStats = defaultStats();
+            unlockedAchievements = {};
+            shownToastIds.clear();
+            updateProfileCounterUI();
+            hide("profile-trigger-btn");
             show("auth-card");
             hide("loading-card");
             hide("game-card");
@@ -2217,6 +2637,7 @@
         if (!currentUser || !playerReady || !selectedLeague || !selectedClass) return;
         hide("loading-card");
         show("game-card");
+        show("profile-trigger-btn");
         document.getElementById("player-badge").innerHTML = `
             ${EMBLEMS[selectedLeague] || ""}
             <span>${LEAGUES[selectedLeague].title} • ${selectedClass}</span>
@@ -2363,6 +2784,18 @@
                     [`${selectedLeague}.${selectedClass}.score`]: increment(1)
                 });
                 await batch.commit();
+                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
+                elixir = nextElixirVal;
+                await evaluateAndSaveProgress(
+                    {
+                        solvedTotal: 1,
+                        currentStreak: 1,
+                        solvedOnEdge: activeErrors === 2 ? 1 : 0
+                    },
+                    {
+                        maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
+                    }
+                );
                 setLog("Точно в цель! +1 балл и +1 эликсир.");
                 generateProblem();
             } else {
@@ -2371,6 +2804,7 @@
                     errorsToday: nextErr,
                     errDate: today
                 });
+                await evaluateAndSaveProgress({}, { currentStreak: 0 });
                 if (nextErr >= MAX_ERRORS) {
                     currentAnswer = null;
                     setLog("3-я ошибка за день зафиксирована в аккаунте — новые примеры закрыты до завтра.");
@@ -2397,6 +2831,7 @@
                 [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
             });
             await batch.commit();
+            await evaluateAndSaveProgress({ cardsUsed: 1, shieldsUsed: 1 });
             setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
         } catch (err) {
             showError("Карта «Щит башни»", err);
@@ -2416,6 +2851,7 @@
                 [`${selectedLeague}.${selectedClass}.score`]: increment(3)
             });
             await batch.commit();
+            await evaluateAndSaveProgress({ cardsUsed: 1, boostsUsed: 1 });
             setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
         } catch (err) {
             showError("Карта «Ускорение»", err);
@@ -2464,6 +2900,7 @@
                 tx.update(tournamentRef, updates);
                 return result;
             });
+            await evaluateAndSaveProgress(theft ? { cardsUsed: 1, theftsUsed: 1 } : { cardsUsed: 1, justiceUsed: 1 });
             setLog(message);
         } catch (err) {
             showError(theft ? "Карта «Кража»" : "Карта «Правосудие»", err);
@@ -2506,6 +2943,7 @@
                 });
                 return `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`;
             });
+            await evaluateAndSaveProgress({ cardsUsed: 1, strikesUsed: 1 });
             setLog(resultMsg);
         } catch (err) {
             showError("Карта «Огненный шар»", err);
