@@ -1741,8 +1741,8 @@
         },
         league_10_11: {
             title: "10-11",
-            prizesCount: 2,
-            classes: ["10", "11"]
+            prizesCount: 3,
+            classes: ["10", "11", "X"]
         }
     };
 
@@ -1762,21 +1762,24 @@
     ];
 
     function resolveAssignmentFromEmail(email) {
-        if (!email) return null;
-        const localPart = String(email).toLowerCase().split("@")[0] || "";
-        // Разбиваем логин по точкам, подчёркиваниям и дефисам: ivanov.5, petrov_9b, sidorov-10
-        const parts = localPart.split(/[._-]+/).filter(Boolean);
+    if (!email) return null;
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-        // Проверяем с конца (обычно класс указывают в конце: ivanov.5, smirnova.9b), затем по всем сегментам
-        const orderedSegments = [...parts].reverse();
-        for (const seg of orderedSegments) {
-            const match = EMAIL_TEAM_TOKENS.find(item => item.token === seg);
-            if (match) {
-                return { league: match.league, team: match.team };
-            }
-        }
-        return null;
+    if (normalizedEmail === "oleg.x@math.local") {
+        return { league: "league_10_11", team: "X" };
     }
+
+    const localPart = normalizedEmail.split("@")[0] || "";
+    const parts = localPart.split(/[._-]+/).filter(Boolean);
+    const orderedSegments = [...parts].reverse();
+    for (const seg of orderedSegments) {
+        const match = EMAIL_TEAM_TOKENS.find(item => item.token === seg);
+        if (match) {
+            return { league: match.league, team: match.team };
+        }
+    }
+    return null;
+}
 
     const MAX_ERRORS = 3;
     const MAX_ELIXIR = 10;
