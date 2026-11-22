@@ -33,6 +33,7 @@
 
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
 
+        /* Единообразие шрифтов и начертаний в стиле кнопок «Обновить» и «Выйти» */
         button, input, select, textarea, .btn, .tab-btn, .mode-btn, .badge, .cost-pill, .locked-pill, .admin-status-pill, .rules-trigger, .rules-close {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             font-weight: 800;
@@ -50,7 +51,7 @@
             min-height: 100vh;
             background: var(--bg-grad);
             color: var(--text);
-            padding: 16px 16px 132px;
+            padding: 16px;
             display: flex;
             justify-content: center;
         }
@@ -81,6 +82,7 @@
         .billboard-status .btn { width: auto; padding: 7px 14px; font-size: 0.82rem; }
         .billboard-status-text { flex: 1; min-width: 180px; }
 
+        /* Баннер ошибок Firebase */
         .error-banner {
             background: rgba(239, 68, 68, 0.16);
             border: 2px solid var(--strike);
@@ -100,6 +102,17 @@
         }
         .error-list { display: flex; flex-direction: column; gap: 6px; }
         .error-item { word-break: break-word; }
+        .error-code {
+            display: inline-block;
+            background: #450a0a;
+            border: 1px solid var(--strike);
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-family: Consolas, monospace;
+            font-size: 0.82rem;
+            color: #fecaca;
+        }
+        .error-hint { color: var(--muted); font-size: 0.8rem; }
         .error-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .error-actions .btn { width: auto; padding: 6px 12px; font-size: 0.8rem; }
 
@@ -126,6 +139,7 @@
             font-size: 0.9rem;
         }
 
+        /* Билборд */
         .billboard-toolbar {
             display: flex;
             flex-wrap: wrap;
@@ -296,16 +310,6 @@
         .badge-silver { background: rgba(226, 232, 240, 0.18); color: var(--silver); border: 1px solid rgba(226, 232, 240, 0.4); }
         .badge-bronze { background: rgba(217, 119, 6, 0.2); color: #f59e0b; border: 1px solid rgba(217, 119, 6, 0.45); }
         .badge-shield { background: rgba(56, 189, 248, 0.2); color: var(--shield); border: 1px solid rgba(56, 189, 248, 0.45); }
-        .badge-justice {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fcd34d;
-            border: 1px solid rgba(245, 158, 11, 0.45);
-        }
-        .badge svg {
-            width: 14px;
-            height: 14px;
-            vertical-align: -2px;
-        }
 
         .score-val {
             font-size: 1.3rem;
@@ -316,6 +320,7 @@
             border-radius: 8px;
         }
 
+        /* Объёмные кнопки в стиле Clash Royale */
         .btn {
             width: 100%;
             padding: 11px 14px;
@@ -362,19 +367,10 @@
             background: linear-gradient(180deg, #fb923c 0%, #ea580c 55%, #dc2626 100%);
             border-bottom-color: #7f1d1d;
         }
-        .btn-theft {
-            background: linear-gradient(180deg, #34d399 0%, #059669 100%);
-            border-bottom-color: #064e3b;
-        }
-        .btn-justice {
-            background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
-            color: #1e1b0b;
-            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-            border-bottom-color: #78350f;
-        }
 
         .cards-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 
+        /* Форма входа */
         .auth-form {
             display: flex;
             flex-direction: column;
@@ -413,6 +409,7 @@
             word-break: break-all;
         }
 
+        /* Шкала эликсира и ошибки */
         .hud-top {
             display: grid;
             grid-template-columns: 1fr auto;
@@ -480,7 +477,6 @@
         }
         .problem-box sup { vertical-align: super; }
         .problem-box sub { vertical-align: sub; }
-
         input[type="number"], input[type="email"], input[type="password"], .password-field input[type="text"], select {
             width: 100%;
             padding: 12px;
@@ -553,6 +549,7 @@
             border-color: var(--gold);
         }
 
+        /* Игровые карточки способностей */
         .abilities-box {
             margin-top: 18px;
             padding-top: 16px;
@@ -584,8 +581,6 @@
         .game-card.card-shield { border-color: rgba(56, 189, 248, 0.55); }
         .game-card.card-boost { border-color: rgba(192, 132, 252, 0.55); }
         .game-card.card-strike { border-color: rgba(251, 146, 60, 0.7); }
-        .game-card.card-theft { border-color: rgba(52, 211, 153, 0.65); }
-        .game-card.card-justice { border-color: rgba(251, 191, 36, 0.7); }
 
         .card-art {
             position: relative;
@@ -604,12 +599,6 @@
             background:
                 radial-gradient(circle at 55% 65%, rgba(251, 146, 60, 0.45) 0%, rgba(220, 38, 38, 0.25) 45%, rgba(14, 21, 37, 0.96) 80%);
             box-shadow: inset 0 0 18px rgba(249, 115, 22, 0.28);
-        }
-        .art-theft {
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.34) 0%, rgba(14, 21, 37, 0.96) 76%);
-        }
-        .art-justice {
-            background: radial-gradient(circle, rgba(245, 158, 11, 0.38) 0%, rgba(14, 21, 37, 0.96) 76%);
         }
 
         .cost-pill {
@@ -725,7 +714,43 @@
             .hud-top { grid-template-columns: 1fr; }
             .lives-box { text-align: left; }
         }
+        /* Новые карточки: Кража и Правосудие в общей тёмно-синей стилистике арены */
+        .game-card.card-theft { border-color: rgba(52, 211, 153, 0.65); }
+        .game-card.card-justice { border-color: rgba(251, 191, 36, 0.7); }
 
+        .art-theft {
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.34) 0%, rgba(14, 21, 37, 0.96) 76%);
+        }
+        .art-justice {
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.38) 0%, rgba(14, 21, 37, 0.96) 76%);
+        }
+
+        .btn-theft {
+            background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+            border-bottom-color: #064e3b;
+        }
+        .btn-justice {
+            background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+            color: #1e1b0b;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+            border-bottom-color: #78350f;
+        }
+
+        .badge-justice {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+        }
+        .badge svg {
+            width: 14px;
+            height: 14px;
+            vertical-align: -2px;
+        }
+
+        /* Плавающий стек кнопок в левом нижнем углу: Профиль над Правилами */
+        body {
+            padding-bottom: 132px;
+        }
         .corner-triggers {
             position: fixed;
             bottom: 16px;
@@ -794,6 +819,7 @@
             }
         }
 
+        /* Всплывающая карточка достижения в стиле Clash Royale */
         .ach-toast-stack {
             position: fixed;
             top: 16px;
@@ -876,6 +902,7 @@
             line-height: 1.25;
         }
 
+        /* Окно профиля и сетка достижений */
         .profile-dialog {
             width: min(720px, calc(100% - 24px));
             overflow-x: hidden;
@@ -985,6 +1012,7 @@
         .ach-card.unlocked .ach-card-desc {
             color: #e2e8f0;
         }
+        /* Фильтры, прогресс-бары и теги редкости достижений */
         .ach-filters {
             display: flex;
             flex-wrap: wrap;
@@ -1141,7 +1169,7 @@
             cursor: pointer;
         }
         .rules-trigger:focus-visible, .rules-close:focus-visible { outline: 3px solid var(--gold); }
-
+        /* Таймер обратного отсчёта турнира (управляется админом) */
         .countdown-banner {
             display: flex;
             align-items: center;
@@ -1181,6 +1209,7 @@
             color: #fca5a5;
         }
 
+        /* Баннер паузы от админа */
         .pause-banner {
             background: rgba(251, 191, 36, 0.14);
             border: 2px solid var(--gold);
@@ -1191,6 +1220,7 @@
             color: #fef3c7;
         }
 
+        /* Панель администратора */
         .admin-card {
             border-color: var(--gold);
             background: linear-gradient(180deg, #272235 0%, #161829 100%);
@@ -1285,6 +1315,7 @@
 </head>
 <body>
 <div class="app">
+    <!-- Баннер уведомлений об ошибках для участников -->
     <div class="error-banner hidden" id="error-banner" role="alert">
         <div class="error-banner-head">
             <span>Упс... что-то пошло не так</span>
@@ -1297,9 +1328,11 @@
         </div>
     </div>
 
+    <!-- Билборд рейтинга лиг -->
     <div class="card" id="billboard-card">
         <div class="header-banner">
             <h1>Math Royale</h1>
+            
             <div class="countdown-banner hidden" id="countdown-banner" role="timer" aria-live="off">
                 <span class="countdown-label" id="countdown-label">⏳ До финала события:</span>
                 <span class="countdown-clock" id="countdown-clock">--д --:--:--</span>
@@ -1338,6 +1371,7 @@
         <div id="all-leagues-board" class="all-leagues-grid hidden"></div>
     </div>
 
+    <!-- Экран входа по email и паролю -->
     <div class="card" id="auth-card">
         <h2 style="margin:0 0 8px; font-size:1.2rem; font-weight:800; text-align:center;">Вход в аккаунт участника</h2>
         <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem; text-align:center;">
@@ -1354,10 +1388,12 @@
         </form>
     </div>
 
+    <!-- Состояние загрузки после входа -->
     <div class="card hidden" id="loading-card" style="text-align:center; color:var(--muted); font-weight:700;">
         Загружаем профиль игрока…
     </div>
 
+    <!-- Игровой экран -->
     <div class="card hidden" id="game-card">
         <div class="account-bar">
             <div>Аккаунт: <span class="account-email" id="game-user-email"></span></div>
@@ -1406,6 +1442,7 @@
             <div class="abilities-title">Карты эликсира</div>
 
             <div class="cards-grid-3">
+                <!-- 3 эликсира: Щит башни -->
                 <div class="game-card card-shield">
                     <div class="card-art art-shield">
                         <span class="cost-pill">3 эл.</span>
@@ -1420,6 +1457,7 @@
                     <button class="btn btn-shield" id="btn-shield" onclick="castShield()">Активировать</button>
                 </div>
 
+                <!-- 4 эликсира: Ускорение -->
                 <div class="game-card card-boost">
                     <div class="card-art art-boost">
                         <span class="cost-pill">4 эл.</span>
@@ -1432,6 +1470,7 @@
                     <button class="btn btn-boost" id="btn-boost" onclick="castBoost()">Дать +3 балла</button>
                 </div>
 
+                <!-- 5 эликсиров: Правосудие -->
                 <div class="game-card card-justice">
                     <div class="card-art art-justice">
                         <span class="cost-pill">5 эл.</span>
@@ -1450,6 +1489,7 @@
                     <button class="btn btn-justice" id="btn-justice" onclick="castJustice()">Защитить команду</button>
                 </div>
 
+                <!-- 6 эликсиров: Огненный шар -->
                 <div class="game-card card-strike">
                     <div class="card-art art-strike">
                         <span class="cost-pill">6 эл.</span>
@@ -1480,6 +1520,7 @@
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
 
+                <!-- 10 эликсиров: Кража -->
                 <div class="game-card card-theft">
                     <div class="card-art art-theft">
                         <span class="cost-pill">10 эл.</span>
@@ -1516,6 +1557,7 @@
         <div class="status-log" id="status-log"></div>
     </div>
 
+    <!-- Панель администратора (только для admin-аккаунта) -->
     <div class="card admin-card hidden" id="admin-card">
         <div class="admin-header">
             <div class="admin-title">👑 Панель организатора</div>
@@ -1525,6 +1567,7 @@
             </div>
         </div>
 
+        <!-- 1. Управление таймером и состоянием арены -->
         <div class="admin-section">
             <div class="admin-section-title">
                 Таймер и режим арены
@@ -1541,6 +1584,7 @@
             </div>
         </div>
 
+        <!-- 2. Корректировка баллов / щитов / правосудия команды -->
         <div class="admin-section">
             <div class="admin-section-title">Корректировка показателей команды</div>
             <div class="admin-row" style="margin-bottom:8px;">
@@ -1561,6 +1605,7 @@
             </div>
         </div>
 
+        <!-- 3. Сброс счётчика ошибок за день по лиге -->
         <div class="admin-section">
             <div class="admin-section-title">Сброс ошибок за день по лиге</div>
             <div class="admin-row">
@@ -1575,6 +1620,7 @@
             </div>
         </div>
 
+        <!-- 4. Массовые действия и резервная копия -->
         <div class="admin-section">
             <div class="admin-section-title">Сервисные действия и резервная копия</div>
             <div class="admin-grid-2">
@@ -1583,9 +1629,6 @@
                 </button>
                 <button type="button" class="btn btn-strike" onclick="adminResetAllScores()">
                     🗑 Сбросить все баллы и эффекты
-                </button>
-                <button type="button" class="btn btn-strike" onclick="adminResetAllProgress()">
-                    🔄 Сброс прогресса и достижений
                 </button>
             </div>
         </div>
@@ -1649,26 +1692,11 @@
     <form method="dialog"><button class="btn btn-gold">Закрыть</button></form>
 </dialog>
 
-<dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title">
-    <button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button>
-    <h2 id="rules-title">📜 Правила Math Royale</h2>
-    <ul>
-        <li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li>
-        <li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li>
-        <li>Щит - 3 эликсира: отражает один огненный шар.</li>
-        <li>Ускорение - 4 эликсира: +3 балла своей команде.</li>
-        <li>Огненный шар - 6 эликсира: снимает один щит, а без щита - до 2 баллов цели.</li>
-        <li>Кража - 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li>
-        <li>Правосудие - 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li>
-        <li>Цель атаки - другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li>
-    </ul>
-    <form method="dialog"><button class="btn btn-gold">Понятно</button></form>
-</dialog>
-
+<dialog id="rules-dialog" class="rules-dialog" aria-labelledby="rules-title"><button class="rules-close" onclick="this.closest('dialog').close()" aria-label="Закрыть правила">✕</button><h2 id="rules-title">📜 Правила Math Royale</h2><ul><li>Решайте примеры за свою команду. Верный ответ даёт +1 балл и +1 эликсир (максимум 10). Таймера нет.</li><li>После трёх ошибок за календарный день новые примеры доступны на следующий день.</li><li>Щит - 3 эликсира: отражает один огненный шар.</li><li>Ускорение - 4 эликсира: +3 балла своей команде.</li><li>Огненный шар - 6 эликсира: снимает один щит, а без щита - до 2 баллов цели.</li><li>Кража - 10 эликсира: переносит до 2 имеющихся баллов цели вашей команде. Обычный щит не мешает краже.</li><li>Правосудие - 5 эликсира: защищает вашу команду от одной кражи. При отражении расходуется один молоток, баллы не переходят, а вор тратит 10 эликсира. Защиту можно накапливать.</li><li>Цель атаки - другая команда только из вашей лиги. Баллы не уходят ниже нуля.</li></ul><form method="dialog"><button class="btn btn-gold">Понятно</button></form></dialog>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction, collection, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
@@ -1702,53 +1730,67 @@
     };
 
     const LEAGUES = {
-        league_5_7: { title: "5-7", prizesCount: 3, classes: ["5", "6", "7"] },
-        league_8_9: { title: "8-9", prizesCount: 3, classes: ["8", "9А", "9Б"] },
-        league_10_11: { title: "10-11", prizesCount: 3, classes: ["10", "11", "X"] }
+        league_5_7: {
+            title: "5-7",
+            prizesCount: 3,
+            classes: ["5", "6", "7"]
+        },
+        league_8_9: {
+            title: "8-9",
+            prizesCount: 3,
+            classes: ["8", "9А", "9Б"]
+        },
+        league_10_11: {
+            title: "10-11",
+            prizesCount: 3,
+            classes: ["10", "11", "X"]
+        }
     };
 
+    // Карта соответствия кодов в email (до @) -> лига и команда
+    // Поддерживаются форматы: ivanov.5@math.local, ivanov_9a@math.local, petrov-10@math.local и т.п.
     const EMAIL_TEAM_TOKENS = [
-        { token: "10", league: "league_10_11", team: "10" },
-        { token: "11", league: "league_10_11", team: "11" },
-        { token: "9a", league: "league_8_9", team: "9А" },
-        { token: "9а", league: "league_8_9", team: "9А" },
-        { token: "9b", league: "league_8_9", team: "9Б" },
-        { token: "9б", league: "league_8_9", team: "9Б" },
-        { token: "8",  league: "league_8_9", team: "8" },
-        { token: "5",  league: "league_5_7", team: "5" },
-        { token: "6",  league: "league_5_7", team: "6" },
-        { token: "7",  league: "league_5_7", team: "7" }
+        { token: "10",     league: "league_10_11", team: "10" },
+        { token: "11",     league: "league_10_11", team: "11" },
+        { token: "9a",     league: "league_8_9", team: "9А" },
+        { token: "9а",     league: "league_8_9", team: "9А" },
+        { token: "9b",     league: "league_8_9", team: "9Б" },
+        { token: "9б",     league: "league_8_9", team: "9Б" },
+        { token: "8",      league: "league_8_9", team: "8" },
+        { token: "5",      league: "league_5_7", team: "5" },
+        { token: "6",      league: "league_5_7", team: "6" },
+        { token: "7",      league: "league_5_7", team: "7" }
     ];
 
     function resolveAssignmentFromEmail(email) {
-        if (!email) return null;
-        const normalizedEmail = String(email).trim().toLowerCase();
+    if (!email) return null;
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-        if (normalizedEmail === "oleg.x@math.local") {
-            return { league: "league_10_11", team: "X" };
-        }
-
-        const localPart = normalizedEmail.split("@")[0] || "";
-        const parts = localPart.split(/[._-]+/).filter(Boolean);
-        const orderedSegments = [...parts].reverse();
-        for (const seg of orderedSegments) {
-            const match = EMAIL_TEAM_TOKENS.find(item => item.token === seg);
-            if (match) {
-                return { league: match.league, team: match.team };
-            }
-        }
-        return null;
+    if (normalizedEmail === "oleg.x@math.local") {
+        return { league: "league_10_11", team: "X" };
     }
+
+    const localPart = normalizedEmail.split("@")[0] || "";
+    const parts = localPart.split(/[._-]+/).filter(Boolean);
+    const orderedSegments = [...parts].reverse();
+    for (const seg of orderedSegments) {
+        const match = EMAIL_TEAM_TOKENS.find(item => item.token === seg);
+        if (match) {
+            return { league: match.league, team: match.team };
+        }
+    }
+    return null;
+}
 
     const MAX_ERRORS = 3;
     const MAX_ELIXIR = 10;
+    // Целевая дата окончания предметной недели: 28 ноября текущего года, 23:59:00 локального времени
     const TOURNAMENT_DEADLINE = new Date(new Date().getFullYear(), 10, 28, 23, 59, 0);
 
+    // Проверка, является ли email аккаунтом администратора (например: admin@math.local, admin.school@math.local)
     function isAdminEmail(email) {
         if (!email) return false;
-        const normalized = String(email).trim().toLowerCase();
-        if (normalized === "admin@math.local") return true;
-        const localPart = normalized.split("@")[0] || "";
+        const localPart = String(email).toLowerCase().split("@")[0] || "";
         const parts = localPart.split(/[._-]+/).filter(Boolean);
         return parts.includes("admin");
     }
@@ -1784,7 +1826,8 @@
     let errorsToday = 0;
     let errDate = "";
     let currentAnswer = null;
-    let currentProblemText = "";
+
+    /* ---------- Уведомления об ошибках (дружелюбный формат для участников) ---------- */
 
     function formatErrorCode(err, scope) {
         const raw = (err && err.code) ? String(err.code) : (err && err.name) ? String(err.name) : "unknown";
@@ -1820,6 +1863,7 @@
     function showError(where, err, scope = "firestore", withActions = false) {
         const code = formatErrorCode(err, scope);
         const text = friendlyErrorMessage(code);
+        // Подробности оставляем только в консоли разработчика для отладки
         console.error(`[${where}] (${code})`, err);
 
         const banner = document.getElementById("error-banner");
@@ -1840,6 +1884,8 @@
         document.getElementById("error-banner").classList.add("hidden");
         document.getElementById("error-actions").classList.add("hidden");
     };
+
+    /* ---------- Утилиты ---------- */
 
     function getTodayKey() {
         const d = new Date();
@@ -1877,6 +1923,8 @@
         }
         return state;
     }
+
+    /* ---------- Билборд (общий документ) ---------- */
 
     async function ensureStateExists() {
         try {
@@ -1921,6 +1969,8 @@
         billboardWaitTimer = null;
     }
 
+    /* ---------- Таймер обратного отсчёта ---------- */
+
     function formatRemainingTime(ms) {
         if (ms <= 0) return "00д 00:00:00";
         const totalSec = Math.floor(ms / 1000);
@@ -1957,7 +2007,7 @@
     }
 
     function getMsUntilMidnightUTC5() {
-        const offsetMs = 5 * 60 * 60 * 1000;
+        const offsetMs = 5 * 60 * 60 * 1000; // UTC+5 (Астана)
         const nowUtc5 = new Date(Date.now() + offsetMs);
         const nextMidnightUtc5 = Date.UTC(
             nowUtc5.getUTCFullYear(),
@@ -1979,6 +2029,7 @@
         const pad = n => String(n).padStart(2, "0");
         clockEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
+        // Если наступил новый календарный день, а ошибки ещё не сбросились в UI - обновляем состояние
         if (playerReady && errorsToday >= MAX_ERRORS && errDate && errDate !== getTodayKey()) {
             errorsToday = 0;
             errDate = getTodayKey();
@@ -2003,6 +2054,8 @@
     function isArenaPaused() {
         return Boolean(liveState?.settings?.arenaPaused);
     }
+
+    /* ---------- Панель администратора ---------- */
 
     function setAdminLog(msg, isError = false) {
         const el = document.getElementById("admin-log");
@@ -2184,57 +2237,8 @@
         }
     };
 
-    window.adminResetAllProgress = async function() {
-        if (!isAdminUser) return;
-        const confirmed = window.confirm(
-            "Полностью сбросить прогресс ВСЕХ игроков (эликсир, ошибки за день, статистику и открытые достижения)? Это действие нельзя отменить."
-        );
-        if (!confirmed) return;
-        try {
-            const today = getTodayKey();
-            const freshStats = defaultStats();
-            const colRef = collection(db, "playerStates");
-            const snap = await getDocs(colRef);
-            const batch = writeBatch(db);
-            let count = 0;
-
-            snap.forEach((docSnap) => {
-                batch.set(docSnap.ref, {
-                    elixir: 0,
-                    errorsToday: 0,
-                    errDate: today,
-                    stats: freshStats,
-                    unlockedAchievements: {}
-                }, { merge: true });
-                count++;
-            });
-
-            if (count > 0) {
-                await batch.commit();
-            }
-
-            if (playerDocRef) {
-                elixir = 0;
-                errorsToday = 0;
-                errDate = today;
-                playerStats = { ...freshStats };
-                unlockedAchievements = {};
-                shownToastIds.clear();
-                updateProfileCounterUI();
-                updateControlsState();
-                if (isGameVisible()) {
-                    generateProblem();
-                }
-            }
-
-            setAdminLog(`Полный сброс выполнен (обновлено профилей игроков: ${count}).`);
-        } catch (err) {
-            showError("Полный сброс прогресса", err);
-            setAdminLog("Не удалось выполнить полный сброс прогресса.", true);
-        }
-    };
-
     function startBillboardSubscription() {
+        // Ignore queued callbacks belonging to a subscription that was replaced.
         const generation = ++billboardGeneration;
         clearBillboardWait();
         if (unsubBillboard) {
@@ -2264,11 +2268,11 @@
                 ? "Показываем последние полученные результаты. Нажмите «Обновить», чтобы повторить."
                 : "Рейтинг пока недоступен. Нажмите «Обновить», чтобы повторить.");
         };
-
         try {
             unsubBillboard = onSnapshot(tournamentRef, { includeMetadataChanges: true }, (snap) => {
                 if (generation !== billboardGeneration) return;
                 billboardFromCache = snap.metadata.fromCache;
+                // An empty cache is not a confirmed empty tournament.
                 if (snap.exists()) {
                     const incoming = snap.data();
                     if (liveState && selectedLeague && selectedClass && incoming[selectedLeague]) {
@@ -2327,6 +2331,10 @@
             : "Нет подключения. Подключитесь к интернету и нажмите «Обновить».");
     });
 
+    /* ---------- Состояние игрока (playerStates/{uid}) ---------- */
+
+    /* ---------- Система достижений (20 тестовых ачивок) ---------- */
+
     const MEDAL_SVGS = {
         bronze: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#3b82f6"/><path d="M32 4H26L24 14H30L32 4Z" fill="#ef4444"/><circle cx="24" cy="28" r="14" fill="#d97706" stroke="#fde68a" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#92400e"/><path d="M24 21L26.2 25.5L31 26.2L27.5 29.6L28.3 34.4L24 32.1L19.7 34.4L20.5 29.6L17 26.2L21.8 25.5L24 21Z" fill="#fcd34d"/></svg>`,
         silver: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#2563eb"/><path d="M32 4H26L24 14H30L32 4Z" fill="#60a5fa"/><circle cx="24" cy="28" r="14" fill="#cbd5e1" stroke="#f8fafc" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#64748b"/><path d="M24 21L26.2 25.5L31 26.2L27.5 29.6L28.3 34.4L24 32.1L19.7 34.4L20.5 29.6L17 26.2L21.8 25.5L24 21Z" fill="#ffffff"/></svg>`,
@@ -2336,6 +2344,7 @@
     };
 
     const ACHIEVEMENTS = [
+        // 1–14: Прогресс по количеству решённых примеров (включая пасхалки)
         { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", progress: s => [s.solvedTotal, 1], check: s => s.solvedTotal >= 1 },
         { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", progress: s => [s.solvedTotal, 5], check: s => s.solvedTotal >= 5 },
         { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", progress: s => [s.solvedTotal, 10], check: s => s.solvedTotal >= 10 },
@@ -2350,6 +2359,8 @@
         { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров - математическая константа 3,14 покорена", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 314], check: s => s.solvedTotal >= 314 },
         { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров - настоящий марафонец арены", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 500], check: s => s.solvedTotal >= 500 },
         { id: "grandmaster_1000", title: "ЛЕГЕНДА АРЕНЫ", desc: "Реши 1000 примеров за всё время турнира", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 1000], check: s => s.solvedTotal >= 1000 },
+
+        // 15–21: Серии без ошибок
         { id: "streak_3", title: "СЕРИЯ ТРЁХ", desc: "Реши 3 примера подряд без ошибок", medal: "bronze", progress: s => [s.bestStreak, 3], check: s => s.bestStreak >= 3 },
         { id: "streak_7", title: "СНАЙПЕР", desc: "Реши 7 примеров подряд без ошибок", medal: "silver", progress: s => [s.bestStreak, 7], check: s => s.bestStreak >= 7 },
         { id: "streak_15", title: "НЕПОБЕДИМЫЙ", desc: "Реши 15 примеров подряд без ошибок", medal: "gold", progress: s => [s.bestStreak, 15], check: s => s.bestStreak >= 15 },
@@ -2357,19 +2368,27 @@
         { id: "streak_40", title: "КАЛЬКУЛЯТОР", desc: "Реши 40 примеров подряд без ошибок", medal: "elixir", rarity: "rare", progress: s => [s.bestStreak, 40], check: s => s.bestStreak >= 40 },
         { id: "streak_60", title: "БЕЗУПРЕЧНЫЙ РАЗУМ", desc: "Реши 60 примеров подряд без единой ошибки", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 60], check: s => s.bestStreak >= 60 },
         { id: "streak_100", title: "АБСОЛЮТНАЯ ТОЧНОСТЬ", desc: "100 верных ответов подряд без промахов", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 100], check: s => s.bestStreak >= 100 },
+
+        // 22–26: Дневная активность и выживание
         { id: "daily_10", title: "БОДРЫЙ ДЕНЬ", desc: "Реши 10 примеров за один календарный день", medal: "bronze", progress: s => [s.bestSolvedInDay, 10], check: s => s.bestSolvedInDay >= 10 },
         { id: "daily_25", title: "УДАРНАЯ СМЕНА", desc: "Реши 25 примеров за один календарный день", medal: "silver", progress: s => [s.bestSolvedInDay, 25], check: s => s.bestSolvedInDay >= 25 },
         { id: "daily_50", title: "НЕУТОМИМЫЙ", desc: "Реши 50 примеров за один календарный день", medal: "gold", rarity: "rare", progress: s => [s.bestSolvedInDay, 50], check: s => s.bestSolvedInDay >= 50 },
         { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", rarity: "rare", progress: s => [s.solvedOnEdge, 1], check: s => s.solvedOnEdge >= 1 },
         { id: "iron_nerves", title: "СТАЛЬНЫЕ НЕРВЫ", desc: "Реши 10 примеров, балансируя на 2 ошибках за день", medal: "emerald", rarity: "epic", progress: s => [s.solvedOnEdge, 10], check: s => s.solvedOnEdge >= 10 },
+
+        // 27–31: Эликсир и экономика
         { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум - 10 капель эликсира", medal: "elixir", progress: s => [s.maxElixirReached, 10], check: s => s.maxElixirReached >= 10 },
         { id: "elixir_spent_20", title: "АЛХИМИК", desc: "Потрать суммарно 20 капель эликсира на карты", medal: "silver", progress: s => [s.elixirSpent, 20], check: s => s.elixirSpent >= 20 },
         { id: "elixir_spent_50", title: "МАГИСТР ЭЛИКСИРА", desc: "Потрать суммарно 50 капель эликсира на карты", medal: "gold", progress: s => [s.elixirSpent, 50], check: s => s.elixirSpent >= 50 },
         { id: "elixir_spent_100", title: "ПОВЕЛИТЕЛЬ МАНЫ", desc: "Потрать суммарно 100 капель эликсира", medal: "emerald", rarity: "epic", progress: s => [s.elixirSpent, 100], check: s => s.elixirSpent >= 100 },
         { id: "first_card", title: "ТАКТИК", desc: "Примени любую карту эликсира в первый раз", medal: "bronze", progress: s => [s.cardsUsed, 1], check: s => s.cardsUsed >= 1 },
+
+        // 32–34: Общее применение карт и универсальность
         { id: "card_master", title: "МАСТЕР КОЛОДЫ", desc: "Примени карты эликсира 10 раз", medal: "gold", progress: s => [s.cardsUsed, 10], check: s => s.cardsUsed >= 10 },
         { id: "grand_strategist", title: "ВЕЛИКИЙ СТРАТЕГ", desc: "Примени карты эликсира 25 раз", medal: "emerald", rarity: "epic", progress: s => [s.cardsUsed, 25], check: s => s.cardsUsed >= 25 },
         { id: "all_rounder", title: "ПОЛНАЯ КОЛОДА", desc: "Примени хотя бы по разу все 5 видов карт эликсира", medal: "emerald", rarity: "epic", progress: s => [[s.shieldsUsed, s.boostsUsed, s.justiceUsed, s.strikesUsed, s.theftsUsed].filter(v => v >= 1).length, 5], check: s => s.shieldsUsed >= 1 && s.boostsUsed >= 1 && s.justiceUsed >= 1 && s.strikesUsed >= 1 && s.theftsUsed >= 1 },
+
+        // 35–45: Специализация по картам (Щит, Ускорение, Правосудие, Огненный шар, Кража)
         { id: "first_shield", title: "КАМЕННАЯ СТЕНА", desc: "Активируй карту «Щит башни» в первый раз", medal: "silver", progress: s => [s.shieldsUsed, 1], check: s => s.shieldsUsed >= 1 },
         { id: "fortress", title: "НЕПРИСТУПНАЯ КРЕПОСТЬ", desc: "Примени карту «Щит башни» 5 раз", medal: "gold", progress: s => [s.shieldsUsed, 5], check: s => s.shieldsUsed >= 5 },
         { id: "first_boost", title: "ФОРСАЖ", desc: "Примени карту «Ускорение» в первый раз", medal: "silver", progress: s => [s.boostsUsed, 1], check: s => s.boostsUsed >= 1 },
@@ -2381,16 +2400,22 @@
         { id: "swiper_no_swiping", title: "ЖУЛИК, НЕ ВОРУЙ", desc: "Примени навык «Кража» в первый раз", medal: "emerald", rarity: "rare", progress: s => [s.theftsUsed, 1], check: s => s.theftsUsed >= 1 },
         { id: "master_thief", title: "ТЕНЬ АРЕНЫ", desc: "Примени навык «Кража» 3 раза", medal: "emerald", rarity: "epic", progress: s => [s.theftsUsed, 3], check: s => s.theftsUsed >= 3 },
         { id: "phantom_raider", title: "ПРИЗРАЧНЫЙ ФАНТОМ", desc: "Успешно укради баллы у соперников 3 раза", medal: "emerald", rarity: "epic", progress: s => [s.successfulThefts, 3], check: s => s.successfulThefts >= 3 },
+
+        // 46–50: Боевые и ситуативные достижения
         { id: "shield_breaker", title: "ПРОБИТИЕ БРОНИ", desc: "Сними вражеский щит «Огненным шаром»", medal: "silver", progress: s => [s.shieldsBroken, 1], check: s => s.shieldsBroken >= 1 },
         { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", progress: s => [s.directHits, 3], check: s => s.directHits >= 3 },
         { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", rarity: "rare", progress: s => [s.maxThefts, 1], check: s => s.maxThefts >= 1 },
         { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", rarity: "rare", progress: s => [s.nightSolved, 1], check: s => s.nightSolved >= 1 },
         { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", rarity: "rare", progress: s => [s.earlySolved, 1], check: s => s.earlySolved >= 1 },
+
+        // 51–55: Тяжёлые достижения
         { id: "streak_150", title: "ВЕЧНЫЙ ДВИГАТЕЛЬ", desc: "Реши 150 примеров подряд без единой ошибки", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 150], check: s => s.bestStreak >= 150 },
         { id: "grandmaster_2000", title: "ГРОССМЕЙСТЕР АРЕНЫ", desc: "Реши 2000 примеров за всё время турнира", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 2000], check: s => s.solvedTotal >= 2000 },
         { id: "armor_breaker_10", title: "ТЕХНОЛОГИЯ РАЗРУШЕНИЯ", desc: "Сбей вражеские щиты «Огненным шаром» 10 раз", medal: "emerald", rarity: "epic", progress: s => [s.shieldsBroken, 10], check: s => s.shieldsBroken >= 10 },
         { id: "elixir_spent_250", title: "ХОЗЯИН ЭЛИКСИРА", desc: "Потрать суммарно 250 капель эликсира на карты", medal: "emerald", rarity: "epic", progress: s => [s.elixirSpent, 250], check: s => s.elixirSpent >= 250 },
         { id: "on_the_razor_edge", title: "ПО ОСТРИЮ НОЖА", desc: "Реши 25 примеров, находясь на 2 ошибках за день", medal: "emerald", rarity: "epic", progress: s => [s.solvedOnEdge, 25], check: s => s.solvedOnEdge >= 25 },
+
+        // 56–60: Секретные достижения
         { id: "secret_invisible_hand", title: "НЕВИДИМАЯ РУКА", desc: "Примени атаку или кражу в течение 60 сек после изменения счёта соперников", medal: "elixir", rarity: "rare", secret: true, progress: s => [s.invisibleHandCount, 1], check: s => s.invisibleHandCount >= 1 },
         { id: "secret_last_drop", title: "ПОСЛЕДНЯЯ КАПЛЯ", desc: "Примени карту эликсира, оставив ровно 0 эликсира на счету", medal: "elixir", rarity: "rare", secret: true, progress: s => [s.zeroElixirPlays, 1], check: s => s.zeroElixirPlays >= 1 },
         { id: "secret_golden_ratio", title: "ЗОЛОТОЕ СЕЧЕНИЕ", desc: "Реши ровно 161 пример (отсылка к φ ≈ 1,618)", medal: "gold", rarity: "rare", secret: true, progress: s => [Math.min(s.solvedTotal, 161), 161], check: s => s.solvedTotal === 161 || s.goldenRatioHit >= 1 },
@@ -2432,7 +2457,6 @@
     let playerStats = defaultStats();
     let unlockedAchievements = {};
     let shownToastIds = new Set();
-    let currentAchFilter = "all";
 
     function updateProfileCounterUI() {
         const count = Object.keys(unlockedAchievements).length;
@@ -2524,6 +2548,8 @@
             console.warn("[Сохранение достижений]", err);
         }
     }
+
+    let currentAchFilter = "all";
 
     function getAchProgressInfo(ach, isUnlocked) {
         if (typeof ach.progress !== "function") {
@@ -2715,6 +2741,8 @@
         return !document.getElementById("game-card").classList.contains("hidden");
     }
 
+    /* ---------- Вход / выход ---------- */
+
     window.handleLogin = async function(event) {
         event.preventDefault();
         const email = document.getElementById("login-email").value.trim();
@@ -2854,6 +2882,8 @@
         }
     });
 
+    /* ---------- Билборд: отображение ---------- */
+
     window.setBillboardMode = function(mode) {
         billboardMode = mode;
         document.getElementById("mode-single-btn").classList.toggle("active", mode === "single");
@@ -2968,9 +2998,13 @@
         select.innerHTML = opponents.map(op => `<option value="${op}">${op}</option>`).join("");
     }
 
+    /* ---------- Примеры ---------- */
+
     function randInt(min, max) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
+
+    let currentProblemText = "";
 
     function generateProblem() {
         if (!playerReady || errorsToday >= MAX_ERRORS || !selectedLeague) return;
@@ -3077,6 +3111,8 @@
         return Boolean(currentUser && playerDocRef && playerReady && selectedLeague && selectedClass && !busy && !isArenaPaused());
     }
 
+    /* ---------- Игровые действия ---------- */
+
     window.submitAnswer = async function() {
         if (!canAct() || errorsToday >= MAX_ERRORS || currentAnswer === null) return;
         const input = document.getElementById("answer-input");
@@ -3094,11 +3130,9 @@
         setBusy(true);
         try {
             if (val === answerAtSubmit) {
-                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
-                const actualGain = nextElixirVal - elixir;
                 const batch = writeBatch(db);
                 batch.update(playerDocRef, {
-                    elixir: nextElixirVal,
+                    elixir: Math.min(MAX_ELIXIR, elixir + 1),
                     errDate: today,
                     errorsToday: activeErrors
                 });
@@ -3106,6 +3140,7 @@
                     [`${selectedLeague}.${selectedClass}.score`]: increment(1)
                 });
                 await batch.commit();
+                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
                 elixir = nextElixirVal;
                 const curHour = new Date().getHours();
                 const nextSolvedTotal = (playerStats.solvedTotal || 0) + 1;
@@ -3124,11 +3159,7 @@
                         maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
                     }
                 );
-                if (actualGain > 0) {
-                    setLog("Точно в цель! +1 балл и +1 эликсир.");
-                } else {
-                    setLog("Точно в цель! +1 балл (бак эликсира уже полон — 10/10).");
-                }
+                setLog("Точно в цель! +1 балл и +1 эликсир.");
                 generateProblem();
             } else {
                 const nextErr = activeErrors + 1;
