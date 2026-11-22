@@ -1373,7 +1373,9 @@
     <!-- Экран входа по email и паролю -->
     <div class="card" id="auth-card">
         <h2 style="margin:0 0 8px; font-size:1.2rem; font-weight:800; text-align:center;">Вход в аккаунт участника</h2>
-
+        <p style="margin:0 0 14px; color:var(--muted); font-size:0.88rem; text-align:center;">
+            Логин и пароль сохраняются при выходе.
+        </p>
         <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
             <input type="email" id="login-email" placeholder="Логин (например, ivanov.5@math.local)" required autocomplete="username">
             <div class="password-field">
