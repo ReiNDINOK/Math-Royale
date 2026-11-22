@@ -991,6 +991,95 @@
         .ach-card.unlocked .ach-card-desc {
             color: #e2e8f0;
         }
+        /* Фильтры, прогресс-бары и теги редкости достижений */
+        .ach-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .ach-filter-btn {
+            border: 1.5px solid var(--border);
+            background: var(--panel-bg);
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 6px 11px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+        .ach-filter-btn:hover {
+            color: var(--text);
+            border-color: var(--border-light);
+        }
+        .ach-filter-btn.active {
+            background: linear-gradient(180deg, #fcd34d 0%, var(--gold) 100%);
+            color: #1e1b0b;
+            border-color: #fef08a;
+        }
+        .ach-card.almost-ready {
+            opacity: 0.92;
+            filter: grayscale(0.2);
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 5px 0 #070b14, inset 0 0 12px rgba(56, 189, 248, 0.12);
+        }
+        .ach-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+        .ach-rarity-pill {
+            font-size: 0.65rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 1px 6px;
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+        .rarity-rare {
+            background: rgba(217, 70, 239, 0.22);
+            color: #f0abfc;
+            border: 1px solid rgba(217, 70, 239, 0.5);
+        }
+        .rarity-epic {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+        .ach-progress-wrap {
+            margin-top: 7px;
+        }
+        .ach-progress-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: #93c5fd;
+            margin-bottom: 3px;
+        }
+        .ach-card.unlocked .ach-progress-meta {
+            color: #fde68a;
+        }
+        .ach-progress-track {
+            height: 6px;
+            border-radius: 999px;
+            background: #090e1a;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            overflow: hidden;
+        }
+        .ach-progress-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #38bdf8 0%, #818cf8 100%);
+            transition: width 0.25s ease;
+        }
+        .ach-card.unlocked .ach-progress-fill {
+            background: linear-gradient(90deg, #f59e0b 0%, #fde047 100%);
+        }
+
         @media (max-width: 580px) {
             .ach-grid { grid-template-columns: 1fr; }
             .profile-stats-row { grid-template-columns: 1fr; }
@@ -1543,6 +1632,12 @@
             <div class="profile-stat-num" id="stat-cards-used">0</div>
             <div class="profile-stat-lbl">Сыграно карт</div>
         </div>
+    </div>
+    <div class="ach-filters" id="ach-filters" role="tablist" aria-label="Фильтр достижений">
+        <button type="button" class="ach-filter-btn active" data-filter="all" onclick="setAchFilter('all')">Все (50)</button>
+        <button type="button" class="ach-filter-btn" data-filter="almost" onclick="setAchFilter('almost')">Почти готовы</button>
+        <button type="button" class="ach-filter-btn" data-filter="unlocked" onclick="setAchFilter('unlocked')">Открытые</button>
+        <button type="button" class="ach-filter-btn" data-filter="locked" onclick="setAchFilter('locked')">Закрытые</button>
     </div>
     <div class="ach-grid" id="profile-ach-grid"></div>
     <form method="dialog"><button class="btn btn-gold">Закрыть</button></form>
@@ -2180,68 +2275,68 @@
 
     const ACHIEVEMENTS = [
         // 1–14: Прогресс по количеству решённых примеров (включая пасхалки)
-        { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", check: s => s.solvedTotal >= 1 },
-        { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", check: s => s.solvedTotal >= 5 },
-        { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 10 },
-        { id: "dozen", title: "ЧЁРТОВА ДЮЖИНА", desc: "Реши 13 примеров — магия чисел на твоей стороне", medal: "bronze", check: s => s.solvedTotal >= 13 },
-        { id: "quarter_hundred", title: "ЧЕТВЕРТЬ СОТНИ", desc: "Реши 25 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 25 },
-        { id: "meaning_of_life", title: "42", desc: "Реши 42 примера — ответ на главный вопрос жизни, Вселенной и всего такого", medal: "elixir", check: s => s.solvedTotal >= 42 },
-        { id: "half_hundred", title: "ПОЛСОТНИ ПОБЕД", desc: "Реши 50 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 50 },
-        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши 67 примеров", medal: "elixir", check: s => s.solvedTotal >= 67 },
-        { id: "centurion", title: "ЦЕНТУРИОН АРЕНЫ", desc: "Реши 100 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 100 },
-        { id: "square_twelve", title: "ДЮЖИНА В КВАДРАТЕ", desc: "Реши 144 примера (12² — целый гросс!)", medal: "gold", check: s => s.solvedTotal >= 144 },
-        { id: "double_hundred", title: "ДВЕСТИ СПАРТАНЦЕВ", desc: "Реши 200 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 200 },
-        { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров — математическая константа 3,14 покорена", medal: "elixir", check: s => s.solvedTotal >= 314 },
-        { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров — настоящий марафонец арены", medal: "emerald", check: s => s.solvedTotal >= 500 },
-        { id: "grandmaster_1000", title: "ЛЕГЕНДА АРЕНЫ", desc: "Реши 1000 примеров за всё время турнира", medal: "emerald", check: s => s.solvedTotal >= 1000 },
+        { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", progress: s => [s.solvedTotal, 1], check: s => s.solvedTotal >= 1 },
+        { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", progress: s => [s.solvedTotal, 5], check: s => s.solvedTotal >= 5 },
+        { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", progress: s => [s.solvedTotal, 10], check: s => s.solvedTotal >= 10 },
+        { id: "dozen", title: "ЧЁРТОВА ДЮЖИНА", desc: "Реши 13 примеров — магия чисел на твоей стороне", medal: "bronze", rarity: "rare", progress: s => [s.solvedTotal, 13], check: s => s.solvedTotal >= 13 },
+        { id: "quarter_hundred", title: "ЧЕТВЕРТЬ СОТНИ", desc: "Реши 25 примеров правильно", medal: "silver", progress: s => [s.solvedTotal, 25], check: s => s.solvedTotal >= 25 },
+        { id: "meaning_of_life", title: "42", desc: "Реши 42 примера — ответ на главный вопрос жизни, Вселенной и всего такого", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 42], check: s => s.solvedTotal >= 42 },
+        { id: "half_hundred", title: "ПОЛСОТНИ ПОБЕД", desc: "Реши 50 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 50], check: s => s.solvedTotal >= 50 },
+        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши 67 примеров", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 67], check: s => s.solvedTotal >= 67 },
+        { id: "centurion", title: "ЦЕНТУРИОН АРЕНЫ", desc: "Реши 100 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 100], check: s => s.solvedTotal >= 100 },
+        { id: "square_twelve", title: "ДЮЖИНА В КВАДРАТЕ", desc: "Реши 144 примера (12² — целый гросс!)", medal: "gold", rarity: "rare", progress: s => [s.solvedTotal, 144], check: s => s.solvedTotal >= 144 },
+        { id: "double_hundred", title: "ДВЕСТИ СПАРТАНЦЕВ", desc: "Реши 200 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 200], check: s => s.solvedTotal >= 200 },
+        { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров — математическая константа 3,14 покорена", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 314], check: s => s.solvedTotal >= 314 },
+        { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров — настоящий марафонец арены", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 500], check: s => s.solvedTotal >= 500 },
+        { id: "grandmaster_1000", title: "ЛЕГЕНДА АРЕНЫ", desc: "Реши 1000 примеров за всё время турнира", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 1000], check: s => s.solvedTotal >= 1000 },
 
         // 15–21: Серии без ошибок
-        { id: "streak_3", title: "СЕРИЯ ТРЁХ", desc: "Реши 3 примера подряд без ошибок", medal: "bronze", check: s => s.bestStreak >= 3 },
-        { id: "streak_7", title: "СНАЙПЕР", desc: "Реши 7 примеров подряд без ошибок", medal: "silver", check: s => s.bestStreak >= 7 },
-        { id: "streak_15", title: "НЕПОБЕДИМЫЙ", desc: "Реши 15 примеров подряд без ошибок", medal: "gold", check: s => s.bestStreak >= 15 },
-        { id: "streak_25", title: "ЖЕЛЕЗНАЯ ЛОГИКА", desc: "Реши 25 примеров подряд без единого промаха", medal: "gold", check: s => s.bestStreak >= 25 },
-        { id: "streak_40", title: "КАЛЬКУЛЯТОР", desc: "Реши 40 примеров подряд без ошибок", medal: "elixir", check: s => s.bestStreak >= 40 },
-        { id: "streak_60", title: "БЕЗУПРЕЧНЫЙ РАЗУМ", desc: "Реши 60 примеров подряд без единой ошибки", medal: "emerald", check: s => s.bestStreak >= 60 },
-        { id: "streak_100", title: "АБСОЛЮТНАЯ ТОЧНОСТЬ", desc: "100 верных ответов подряд без промахов", medal: "emerald", check: s => s.bestStreak >= 100 },
+        { id: "streak_3", title: "СЕРИЯ ТРЁХ", desc: "Реши 3 примера подряд без ошибок", medal: "bronze", progress: s => [s.bestStreak, 3], check: s => s.bestStreak >= 3 },
+        { id: "streak_7", title: "СНАЙПЕР", desc: "Реши 7 примеров подряд без ошибок", medal: "silver", progress: s => [s.bestStreak, 7], check: s => s.bestStreak >= 7 },
+        { id: "streak_15", title: "НЕПОБЕДИМЫЙ", desc: "Реши 15 примеров подряд без ошибок", medal: "gold", progress: s => [s.bestStreak, 15], check: s => s.bestStreak >= 15 },
+        { id: "streak_25", title: "ЖЕЛЕЗНАЯ ЛОГИКА", desc: "Реши 25 примеров подряд без единого промаха", medal: "gold", progress: s => [s.bestStreak, 25], check: s => s.bestStreak >= 25 },
+        { id: "streak_40", title: "КАЛЬКУЛЯТОР", desc: "Реши 40 примеров подряд без ошибок", medal: "elixir", rarity: "rare", progress: s => [s.bestStreak, 40], check: s => s.bestStreak >= 40 },
+        { id: "streak_60", title: "БЕЗУПРЕЧНЫЙ РАЗУМ", desc: "Реши 60 примеров подряд без единой ошибки", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 60], check: s => s.bestStreak >= 60 },
+        { id: "streak_100", title: "АБСОЛЮТНАЯ ТОЧНОСТЬ", desc: "100 верных ответов подряд без промахов", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 100], check: s => s.bestStreak >= 100 },
 
         // 22–26: Дневная активность и выживание
-        { id: "daily_10", title: "БОДРЫЙ ДЕНЬ", desc: "Реши 10 примеров за один календарный день", medal: "bronze", check: s => s.bestSolvedInDay >= 10 },
-        { id: "daily_25", title: "УДАРНАЯ СМЕНА", desc: "Реши 25 примеров за один календарный день", medal: "silver", check: s => s.bestSolvedInDay >= 25 },
-        { id: "daily_50", title: "НЕУТОМИМЫЙ", desc: "Реши 50 примеров за один календарный день", medal: "gold", check: s => s.bestSolvedInDay >= 50 },
-        { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", check: s => s.solvedOnEdge >= 1 },
-        { id: "iron_nerves", title: "СТАЛЬНЫЕ НЕРВЫ", desc: "Реши 10 примеров, балансируя на 2 ошибках за день", medal: "emerald", check: s => s.solvedOnEdge >= 10 },
+        { id: "daily_10", title: "БОДРЫЙ ДЕНЬ", desc: "Реши 10 примеров за один календарный день", medal: "bronze", progress: s => [s.bestSolvedInDay, 10], check: s => s.bestSolvedInDay >= 10 },
+        { id: "daily_25", title: "УДАРНАЯ СМЕНА", desc: "Реши 25 примеров за один календарный день", medal: "silver", progress: s => [s.bestSolvedInDay, 25], check: s => s.bestSolvedInDay >= 25 },
+        { id: "daily_50", title: "НЕУТОМИМЫЙ", desc: "Реши 50 примеров за один календарный день", medal: "gold", rarity: "rare", progress: s => [s.bestSolvedInDay, 50], check: s => s.bestSolvedInDay >= 50 },
+        { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", rarity: "rare", progress: s => [s.solvedOnEdge, 1], check: s => s.solvedOnEdge >= 1 },
+        { id: "iron_nerves", title: "СТАЛЬНЫЕ НЕРВЫ", desc: "Реши 10 примеров, балансируя на 2 ошибках за день", medal: "emerald", rarity: "epic", progress: s => [s.solvedOnEdge, 10], check: s => s.solvedOnEdge >= 10 },
 
         // 27–31: Эликсир и экономика
-        { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум — 10 капель эликсира", medal: "elixir", check: s => s.maxElixirReached >= 10 },
-        { id: "elixir_spent_20", title: "АЛХИМИК", desc: "Потрать суммарно 20 капель эликсира на карты", medal: "silver", check: s => s.elixirSpent >= 20 },
-        { id: "elixir_spent_50", title: "МАГИСТР ЭЛИКСИРА", desc: "Потрать суммарно 50 капель эликсира на карты", medal: "gold", check: s => s.elixirSpent >= 50 },
-        { id: "elixir_spent_100", title: "ПОВЕЛИТЕЛЬ МАНЫ", desc: "Потрать суммарно 100 капель эликсира", medal: "emerald", check: s => s.elixirSpent >= 100 },
-        { id: "first_card", title: "ТАКТИК", desc: "Примени любую карту эликсира в первый раз", medal: "bronze", check: s => s.cardsUsed >= 1 },
+        { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум — 10 капель эликсира", medal: "elixir", progress: s => [s.maxElixirReached, 10], check: s => s.maxElixirReached >= 10 },
+        { id: "elixir_spent_20", title: "АЛХИМИК", desc: "Потрать суммарно 20 капель эликсира на карты", medal: "silver", progress: s => [s.elixirSpent, 20], check: s => s.elixirSpent >= 20 },
+        { id: "elixir_spent_50", title: "МАГИСТР ЭЛИКСИРА", desc: "Потрать суммарно 50 капель эликсира на карты", medal: "gold", progress: s => [s.elixirSpent, 50], check: s => s.elixirSpent >= 50 },
+        { id: "elixir_spent_100", title: "ПОВЕЛИТЕЛЬ МАНЫ", desc: "Потрать суммарно 100 капель эликсира", medal: "emerald", rarity: "epic", progress: s => [s.elixirSpent, 100], check: s => s.elixirSpent >= 100 },
+        { id: "first_card", title: "ТАКТИК", desc: "Примени любую карту эликсира в первый раз", medal: "bronze", progress: s => [s.cardsUsed, 1], check: s => s.cardsUsed >= 1 },
 
         // 32–34: Общее применение карт и универсальность
-        { id: "card_master", title: "МАСТЕР КОЛОДЫ", desc: "Примени карты эликсира 10 раз", medal: "gold", check: s => s.cardsUsed >= 10 },
-        { id: "grand_strategist", title: "ВЕЛИКИЙ СТРАТЕГ", desc: "Примени карты эликсира 25 раз", medal: "emerald", check: s => s.cardsUsed >= 25 },
-        { id: "all_rounder", title: "ПОЛНАЯ КОЛОДА", desc: "Примени хотя бы по разу все 5 видов карт эликсира", medal: "emerald", check: s => s.shieldsUsed >= 1 && s.boostsUsed >= 1 && s.justiceUsed >= 1 && s.strikesUsed >= 1 && s.theftsUsed >= 1 },
+        { id: "card_master", title: "МАСТЕР КОЛОДЫ", desc: "Примени карты эликсира 10 раз", medal: "gold", progress: s => [s.cardsUsed, 10], check: s => s.cardsUsed >= 10 },
+        { id: "grand_strategist", title: "ВЕЛИКИЙ СТРАТЕГ", desc: "Примени карты эликсира 25 раз", medal: "emerald", rarity: "epic", progress: s => [s.cardsUsed, 25], check: s => s.cardsUsed >= 25 },
+        { id: "all_rounder", title: "ПОЛНАЯ КОЛОДА", desc: "Примени хотя бы по разу все 5 видов карт эликсира", medal: "emerald", rarity: "epic", progress: s => [[s.shieldsUsed, s.boostsUsed, s.justiceUsed, s.strikesUsed, s.theftsUsed].filter(v => v >= 1).length, 5], check: s => s.shieldsUsed >= 1 && s.boostsUsed >= 1 && s.justiceUsed >= 1 && s.strikesUsed >= 1 && s.theftsUsed >= 1 },
 
         // 35–45: Специализация по картам (Щит, Ускорение, Правосудие, Огненный шар, Кража)
-        { id: "first_shield", title: "КАМЕННАЯ СТЕНА", desc: "Активируй карту «Щит башни» в первый раз", medal: "silver", check: s => s.shieldsUsed >= 1 },
-        { id: "fortress", title: "НЕПРИСТУПНАЯ КРЕПОСТЬ", desc: "Примени карту «Щит башни» 5 раз", medal: "gold", check: s => s.shieldsUsed >= 5 },
-        { id: "first_boost", title: "ФОРСАЖ", desc: "Примени карту «Ускорение» в первый раз", medal: "silver", check: s => s.boostsUsed >= 1 },
-        { id: "turbo_boost", title: "ГИПЕРДВИГАТЕЛЬ", desc: "Примени карту «Ускорение» 5 раз", medal: "gold", check: s => s.boostsUsed >= 5 },
-        { id: "first_justice", title: "МОЛОТ ЗАКОНА", desc: "Примени карту «Правосудие» в первый раз", medal: "gold", check: s => s.justiceUsed >= 1 },
-        { id: "supreme_judge", title: "ВЕРХОВНЫЙ СУДЬЯ", desc: "Примени карту «Правосудие» 4 раза", medal: "emerald", check: s => s.justiceUsed >= 4 },
-        { id: "first_fireball", title: "ПИРОМАНТ", desc: "Запусти «Огненный шар» в первый раз", medal: "silver", check: s => s.strikesUsed >= 1 },
-        { id: "meteor_rain", title: "МЕТЕОРИТНЫЙ ДОЖДЬ", desc: "Запусти «Огненный шар» 5 раз", medal: "gold", check: s => s.strikesUsed >= 5 },
-        { id: "swiper_no_swiping", title: "ЖУЛИК, НЕ ВОРУЙ", desc: "Примени навык «Кража» в первый раз", medal: "emerald", check: s => s.theftsUsed >= 1 },
-        { id: "master_thief", title: "ТЕНЬ АРЕНЫ", desc: "Примени навык «Кража» 3 раза", medal: "emerald", check: s => s.theftsUsed >= 3 },
-        { id: "phantom_raider", title: "ПРИЗРАЧНЫЙ ФАНТОМ", desc: "Успешно укради баллы у соперников 3 раза", medal: "emerald", check: s => s.successfulThefts >= 3 },
+        { id: "first_shield", title: "КАМЕННАЯ СТЕНА", desc: "Активируй карту «Щит башни» в первый раз", medal: "silver", progress: s => [s.shieldsUsed, 1], check: s => s.shieldsUsed >= 1 },
+        { id: "fortress", title: "НЕПРИСТУПНАЯ КРЕПОСТЬ", desc: "Примени карту «Щит башни» 5 раз", medal: "gold", progress: s => [s.shieldsUsed, 5], check: s => s.shieldsUsed >= 5 },
+        { id: "first_boost", title: "ФОРСАЖ", desc: "Примени карту «Ускорение» в первый раз", medal: "silver", progress: s => [s.boostsUsed, 1], check: s => s.boostsUsed >= 1 },
+        { id: "turbo_boost", title: "ГИПЕРДВИГАТЕЛЬ", desc: "Примени карту «Ускорение» 5 раз", medal: "gold", progress: s => [s.boostsUsed, 5], check: s => s.boostsUsed >= 5 },
+        { id: "first_justice", title: "МОЛОТ ЗАКОНА", desc: "Примени карту «Правосудие» в первый раз", medal: "gold", progress: s => [s.justiceUsed, 1], check: s => s.justiceUsed >= 1 },
+        { id: "supreme_judge", title: "ВЕРХОВНЫЙ СУДЬЯ", desc: "Примени карту «Правосудие» 4 раза", medal: "emerald", rarity: "epic", progress: s => [s.justiceUsed, 4], check: s => s.justiceUsed >= 4 },
+        { id: "first_fireball", title: "ПИРОМАНТ", desc: "Запусти «Огненный шар» в первый раз", medal: "silver", progress: s => [s.strikesUsed, 1], check: s => s.strikesUsed >= 1 },
+        { id: "meteor_rain", title: "МЕТЕОРИТНЫЙ ДОЖДЬ", desc: "Запусти «Огненный шар» 5 раз", medal: "gold", progress: s => [s.strikesUsed, 5], check: s => s.strikesUsed >= 5 },
+        { id: "swiper_no_swiping", title: "ЖУЛИК, НЕ ВОРУЙ", desc: "Примени навык «Кража» в первый раз", medal: "emerald", rarity: "rare", progress: s => [s.theftsUsed, 1], check: s => s.theftsUsed >= 1 },
+        { id: "master_thief", title: "ТЕНЬ АРЕНЫ", desc: "Примени навык «Кража» 3 раза", medal: "emerald", rarity: "epic", progress: s => [s.theftsUsed, 3], check: s => s.theftsUsed >= 3 },
+        { id: "phantom_raider", title: "ПРИЗРАЧНЫЙ ФАНТОМ", desc: "Успешно укради баллы у соперников 3 раза", medal: "emerald", rarity: "epic", progress: s => [s.successfulThefts, 3], check: s => s.successfulThefts >= 3 },
 
         // 46–50: Боевые и ситуативные достижения
-        { id: "shield_breaker", title: "ПРОБИТИЕ БРОНИ", desc: "Сними вражеский щит «Огненным шаром»", medal: "silver", check: s => s.shieldsBroken >= 1 },
-        { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", check: s => s.directHits >= 3 },
-        { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", check: s => s.maxThefts >= 1 },
-        { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", check: s => s.nightSolved >= 1 },
-        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", check: s => s.earlySolved >= 1 }
+        { id: "shield_breaker", title: "ПРОБИТИЕ БРОНИ", desc: "Сними вражеский щит «Огненным шаром»", medal: "silver", progress: s => [s.shieldsBroken, 1], check: s => s.shieldsBroken >= 1 },
+        { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", progress: s => [s.directHits, 3], check: s => s.directHits >= 3 },
+        { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", rarity: "rare", progress: s => [s.maxThefts, 1], check: s => s.maxThefts >= 1 },
+        { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", rarity: "rare", progress: s => [s.nightSolved, 1], check: s => s.nightSolved >= 1 },
+        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", rarity: "rare", progress: s => [s.earlySolved, 1], check: s => s.earlySolved >= 1 }
     ];
 
     function defaultStats() {
@@ -2365,6 +2460,104 @@
         }
     }
 
+    let currentAchFilter = "all";
+
+    function getAchProgressInfo(ach, isUnlocked) {
+        if (typeof ach.progress !== "function") {
+            return { current: isUnlocked ? 1 : 0, target: 1, ratio: isUnlocked ? 1 : 0 };
+        }
+        const [rawCur, rawTarget] = ach.progress(playerStats);
+        const target = Math.max(1, Number(rawTarget) || 1);
+        const current = isUnlocked ? target : Math.min(target, Math.max(0, Number(rawCur) || 0));
+        return { current, target, ratio: Math.min(1, current / target) };
+    }
+
+    function renderProfileAchievements() {
+        const grid = document.getElementById("profile-ach-grid");
+        if (!grid) return;
+
+        const items = ACHIEVEMENTS.map(ach => {
+            const isUnlocked = Boolean(unlockedAchievements[ach.id]);
+            const prog = getAchProgressInfo(ach, isUnlocked);
+            const isAlmostReady = !isUnlocked && prog.target > 1 && prog.current > 0 && prog.ratio >= 0.5;
+            return { ach, isUnlocked, prog, isAlmostReady };
+        });
+
+        const unlockedCount = items.filter(x => x.isUnlocked).length;
+        const almostCount = items.filter(x => x.isAlmostReady).length;
+        const lockedCount = items.length - unlockedCount;
+
+        document.querySelectorAll("#ach-filters .ach-filter-btn").forEach(btn => {
+            const f = btn.dataset.filter;
+            btn.classList.toggle("active", f === currentAchFilter);
+            if (f === "all") btn.textContent = `Все (${items.length})`;
+            if (f === "almost") btn.textContent = `Почти готовы (${almostCount})`;
+            if (f === "unlocked") btn.textContent = `Открытые (${unlockedCount})`;
+            if (f === "locked") btn.textContent = `Закрытые (${lockedCount})`;
+        });
+
+        let filtered = items;
+        if (currentAchFilter === "almost") {
+            filtered = items.filter(x => x.isAlmostReady).sort((a, b) => b.prog.ratio - a.prog.ratio);
+        } else if (currentAchFilter === "unlocked") {
+            filtered = items.filter(x => x.isUnlocked);
+        } else if (currentAchFilter === "locked") {
+            filtered = items.filter(x => !x.isUnlocked);
+        }
+
+        if (filtered.length === 0) {
+            const emptyMsg = currentAchFilter === "almost"
+                ? "Пока нет достижений на полпути к открытию — реши пару примеров или сыграй карту!"
+                : currentAchFilter === "unlocked"
+                    ? "Пока нет открытых достижений. Первый решённый пример сразу откроет награду!"
+                    : "Все достижения в этой категории уже открыты!";
+            grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:var(--muted); padding:18px 10px; font-size:0.86rem;">${emptyMsg}</div>`;
+            return;
+        }
+
+        grid.innerHTML = filtered.map(({ ach, isUnlocked, prog, isAlmostReady }) => {
+            const pct = Math.round(prog.ratio * 100);
+            const rarityBadge = ach.rarity === "epic"
+                ? `<span class="ach-rarity-pill rarity-epic">Эпик</span>`
+                : ach.rarity === "rare"
+                    ? `<span class="ach-rarity-pill rarity-rare">Редкое</span>`
+                    : "";
+            const remaining = Math.max(0, prog.target - prog.current);
+            const statusHint = isUnlocked
+                ? "Выполнено!"
+                : prog.target > 1
+                    ? (remaining === 1 ? "Остался 1 шаг!" : `Осталось: ${remaining}`)
+                    : "Не выполнено";
+
+            return `
+                <div class="ach-card ${isUnlocked ? "unlocked" : (isAlmostReady ? "almost-ready" : "locked")}">
+                    <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
+                    <div style="min-width:0; flex:1;">
+                        <div class="ach-card-head">
+                            <div class="ach-card-title">${ach.title}</div>
+                            ${rarityBadge}
+                        </div>
+                        <div class="ach-card-desc">${ach.desc}</div>
+                        <div class="ach-progress-wrap">
+                            <div class="ach-progress-meta">
+                                <span>${statusHint}</span>
+                                <span>${prog.current} / ${prog.target}</span>
+                            </div>
+                            <div class="ach-progress-track">
+                                <div class="ach-progress-fill" style="width:${pct}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    window.setAchFilter = function(filter) {
+        currentAchFilter = filter;
+        renderProfileAchievements();
+    };
+
     window.openProfileModal = function() {
         if (!currentUser) return;
         document.getElementById("profile-player-name").textContent = currentUser.email || "Участник";
@@ -2375,20 +2568,7 @@
         document.getElementById("stat-streak-best").textContent = playerStats.bestStreak || 0;
         document.getElementById("stat-cards-used").textContent = playerStats.cardsUsed || 0;
         updateProfileCounterUI();
-
-        const grid = document.getElementById("profile-ach-grid");
-        grid.innerHTML = ACHIEVEMENTS.map(ach => {
-            const isUnlocked = Boolean(unlockedAchievements[ach.id]);
-            return `
-                <div class="ach-card ${isUnlocked ? "unlocked" : "locked"}">
-                    <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
-                    <div style="min-width:0; flex:1;">
-                        <div class="ach-card-title">${ach.title}</div>
-                        <div class="ach-card-desc">${ach.desc}</div>
-                    </div>
-                </div>
-            `;
-        }).join("");
+        renderProfileAchievements();
 
         document.getElementById("profile-dialog").showModal();
     };
