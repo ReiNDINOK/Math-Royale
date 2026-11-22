@@ -1703,6 +1703,9 @@
                 <button type="button" class="btn btn-strike" onclick="adminResetAllScores()">
                     🗑 Сбросить все баллы и эффекты
                 </button>
+                <button type="button" class="btn btn-strike" onclick="adminResetAllProgress()">
+                    🔄 Сброс прогресса и достижений
+                </button>
             </div>
         </div>
 
@@ -2363,6 +2366,56 @@
         } catch (err) {
             showError("Сброс таблицы", err);
             setAdminLog("Не удалось сбросить таблицу.", true);
+        }
+    };
+
+    window.adminResetAllProgress = async function() {
+        if (!isAdminUser) return;
+        const confirmed = window.confirm(
+            "Полностью сбросить прогресс ВСЕХ игроков (эликсир, ошибки за день, статистику и открытые достижения)? Это действие нельзя отменить."
+        );
+        if (!confirmed) return;
+        try {
+            const today = getTodayKey();
+            const freshStats = defaultStats();
+            const colRef = collection(db, "playerStates");
+            const snap = await getDocs(colRef);
+            const batch = writeBatch(db);
+            let count = 0;
+
+            snap.forEach((docSnap) => {
+                batch.set(docSnap.ref, {
+                    elixir: 0,
+                    errorsToday: 0,
+                    errDate: today,
+                    stats: freshStats,
+                    unlockedAchievements: {}
+                }, { merge: true });
+                count++;
+            });
+
+            if (count > 0) {
+                await batch.commit();
+            }
+
+            if (playerDocRef) {
+                elixir = 0;
+                errorsToday = 0;
+                errDate = today;
+                playerStats = { ...freshStats };
+                unlockedAchievements = {};
+                shownToastIds.clear();
+                updateProfileCounterUI();
+                updateControlsState();
+                if (isGameVisible()) {
+                    generateProblem();
+                }
+            }
+
+            setAdminLog(`Полный сброс выполнен (обновлено профилей игроков: ${count}).`);
+        } catch (err) {
+            showError("Полный сброс прогресса", err);
+            setAdminLog("Не удалось выполнить полный сброс прогресса.", true);
         }
     };
 
