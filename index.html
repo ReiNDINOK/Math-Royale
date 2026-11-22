@@ -2241,7 +2241,7 @@
         { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", check: s => s.directHits >= 3 },
         { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", check: s => s.maxThefts >= 1 },
         { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", check: s => s.nightSolved >= 1 },
-        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 08:00)", medal: "silver", check: s => s.earlySolved >= 1 }
+        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", check: s => s.earlySolved >= 1 }
     ];
 
     function defaultStats() {
@@ -2855,7 +2855,7 @@
                         currentStreak: 1,
                         solvedOnEdge: activeErrors === 2 ? 1 : 0,
                         nightSolved: (curHour >= 22 || curHour < 5) ? 1 : 0,
-                        earlySolved: (curHour >= 5 && curHour < 8) ? 1 : 0
+                        earlySolved: (curHour >= 5 && curHour < 9) ? 1 : 0
                     },
                     {
                         maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
