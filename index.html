@@ -1278,65 +1278,6 @@
             min-height: 20px;
             text-align: center;
         }
-        .admin-control-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            width: 100%;
-            min-height: 44px;
-            padding: 10px 14px;
-            border-radius: 12px;
-            border: 2px solid var(--border-light);
-            border-bottom-width: 4px;
-            background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
-            color: var(--text);
-            font-size: 0.9rem;
-            font-weight: 800;
-            cursor: pointer;
-            transition: transform 0.08s ease, filter 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-        }
-        .admin-control-btn:hover:not(:disabled) { filter: brightness(1.08); }
-        .admin-control-btn:active:not(:disabled) {
-            transform: translateY(2px);
-            border-bottom-width: 2px;
-        }
-        .admin-control-btn:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-        .admin-control-btn .btn-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #94a3b8;
-            flex-shrink: 0;
-        }
-        .admin-control-btn.is-active {
-            border-color: var(--gold);
-            border-bottom-color: var(--gold-dark);
-            background: linear-gradient(180deg, rgba(251, 191, 36, 0.28) 0%, rgba(180, 83, 9, 0.34) 100%);
-            color: #fef08a;
-            box-shadow: 0 0 14px rgba(251, 191, 36, 0.2);
-        }
-        .admin-control-btn.is-active .btn-dot {
-            background: #fde047;
-            box-shadow: 0 0 8px rgba(253, 224, 71, 0.9);
-        }
-        .elixir-2x-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 0.72rem;
-            font-weight: 900;
-            letter-spacing: 0.03em;
-            background: linear-gradient(180deg, rgba(251, 191, 36, 0.28) 0%, rgba(217, 70, 239, 0.24) 100%);
-            color: #fef08a;
-            border: 1px solid rgba(251, 191, 36, 0.65);
-            text-transform: uppercase;
-        }
         @media (max-width: 600px) {
             .admin-grid-2 { grid-template-columns: 1fr; }
         }
@@ -1431,10 +1372,7 @@
         <div class="hud-top">
             <div>
                 <div class="elixir-label">
-                    <span style="display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                        <span>Эликсир арены</span>
-                        <span id="doubleElixirBadge" class="elixir-2x-badge" hidden>⚡ 2× ЭЛИКСИР</span>
-                    </span>
+                    <span>Эликсир арены</span>
                     <span><span id="elixir-val">0</span> / 10</span>
                 </div>
                 <div class="elixir-bar" id="elixir-bar"></div>
@@ -1592,7 +1530,6 @@
                 Таймер и режим арены
                 <span class="admin-status-pill pill-off" id="admin-timer-status">Таймер скрыт</span>
                 <span class="admin-status-pill pill-on" id="admin-arena-status">Арена активна</span>
-                <span class="admin-status-pill pill-off" id="admin-double-elixir-status">2× Эликсир: ВЫКЛ</span>
             </div>
             <div class="admin-grid-2">
                 <button type="button" class="btn btn-gold" id="btn-toggle-timer" onclick="adminToggleTimer()">
@@ -1600,16 +1537,6 @@
                 </button>
                 <button type="button" class="btn btn-slate" id="btn-toggle-pause" onclick="adminTogglePause()">
                     Поставить арену на паузу
-                </button>
-                <button
-                    id="toggleDoubleElixirBtn"
-                    type="button"
-                    class="admin-control-btn"
-                    onclick="toggleDoubleElixir()"
-                    aria-pressed="false"
-                >
-                    <span class="btn-dot"></span>
-                    <span class="btn-label">2× Эликсир: ВЫКЛ</span>
                 </button>
             </div>
         </div>
@@ -2111,62 +2038,7 @@
         const pauseBtn = document.getElementById("btn-toggle-pause");
         pauseBtn.textContent = paused ? "▶ Возобновить игру на арене" : "⏸ Поставить арену на паузу";
         pauseBtn.className = `btn ${paused ? "btn-gold" : "btn-slate"}`;
-
-        syncDoubleElixirUI(liveState?.settings);
     }
-
-    function isDoubleElixirActive() {
-        return Boolean(liveState?.settings?.doubleElixir);
-    }
-
-    function getElixirGain() {
-        return isDoubleElixirActive() ? 2 : 1;
-    }
-
-    function syncDoubleElixirUI(settings = {}) {
-        const enabled = Boolean(settings?.doubleElixir);
-        const btn = document.getElementById("toggleDoubleElixirBtn");
-        const statusPill = document.getElementById("admin-double-elixir-status");
-        const badge = document.getElementById("doubleElixirBadge");
-
-        if (btn) {
-            btn.classList.toggle("is-active", enabled);
-            btn.setAttribute("aria-pressed", String(enabled));
-            const label = btn.querySelector(".btn-label");
-            if (label) {
-                label.textContent = enabled ? "2× Эликсир: ВКЛ" : "2× Эликсир: ВЫКЛ";
-            }
-        }
-        if (statusPill) {
-            statusPill.textContent = enabled ? "2× Эликсир: ВКЛ" : "2× Эликсир: ВЫКЛ";
-            statusPill.className = `admin-status-pill ${enabled ? "pill-on" : "pill-off"}`;
-        }
-        if (badge) {
-            badge.hidden = !enabled;
-        }
-    }
-
-    window.toggleDoubleElixir = async function() {
-        if (!isAdminUser) return;
-        const nextVal = !isDoubleElixirActive();
-        const btn = document.getElementById("toggleDoubleElixirBtn");
-        if (btn) btn.disabled = true;
-        try {
-            await ensureStateExists();
-            await updateDoc(tournamentRef, { "settings.doubleElixir": nextVal });
-            if (!liveState || typeof liveState !== "object") liveState = {};
-            liveState.settings = { ...(liveState.settings || {}), doubleElixir: nextVal };
-            syncDoubleElixirUI(liveState.settings);
-            setAdminLog(nextVal
-                ? "Режим «2× Эликсир» включён: за каждый верный ответ начисляется +2 эликсира (до 10)."
-                : "Режим «2× Эликсир» выключён: возвращено стандартное начисление +1 эликсир.");
-        } catch (err) {
-            showError("Переключение режима 2× Эликсир", err);
-            setAdminLog("Не удалось переключить режим «2× Эликсир».", true);
-        } finally {
-            if (btn) btn.disabled = false;
-        }
-    };
 
     window.adminToggleTimer = async function() {
         if (!isAdminUser) return;
@@ -2302,8 +2174,7 @@
             const fresh = buildDefaultState();
             fresh.settings = {
                 showTimer: Boolean(liveState?.settings?.showTimer),
-                arenaPaused: Boolean(liveState?.settings?.arenaPaused),
-                doubleElixir: Boolean(liveState?.settings?.doubleElixir)
+                arenaPaused: Boolean(liveState?.settings?.arenaPaused)
             };
             await setDoc(tournamentRef, fresh);
             setAdminLog("Все баллы, щиты и правосудие обнулены.");
@@ -2953,7 +2824,6 @@
             playerDocRef = null;
             playerReady = false;
             isAdminUser = false;
-            syncDoubleElixirUI({});
             elixir = 0;
             errorsToday = 0;
             errDate = "";
@@ -3180,7 +3050,6 @@
         const paused = isArenaPaused();
         const isBlocked = errorsToday >= MAX_ERRORS;
 
-        syncDoubleElixirUI(liveState?.settings);
         document.getElementById("elixir-val").innerText = elixir;
         document.getElementById("errors-val").innerText = errorsToday;
         buildElixirBar();
@@ -3225,8 +3094,7 @@
         setBusy(true);
         try {
             if (val === answerAtSubmit) {
-                const elixirGain = getElixirGain();
-                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + elixirGain);
+                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
                 const actualGain = nextElixirVal - elixir;
                 const batch = writeBatch(db);
                 batch.update(playerDocRef, {
@@ -3257,8 +3125,7 @@
                     }
                 );
                 if (actualGain > 0) {
-                    const modeSuffix = elixirGain === 2 ? " (режим 2×)" : "";
-                    setLog(`Точно в цель! +1 балл и +${actualGain} эликсир${actualGain === 1 ? "" : actualGain < 5 ? "а" : "ов"}${modeSuffix}.`);
+                    setLog("Точно в цель! +1 балл и +1 эликсир.");
                 } else {
                     setLog("Точно в цель! +1 балл (бак эликсира уже полон — 10/10).");
                 }
