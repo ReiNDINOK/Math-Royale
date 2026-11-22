@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Royale — Билборд и Арена лиг</title>
+    <title>Math Royale - Билборд и Арена лиг</title>
     <style>
         :root {
             --bg-arena: #0b1120;
@@ -901,7 +901,17 @@
 
         /* Окно профиля и сетка достижений */
         .profile-dialog {
-            width: min(680px, calc(100% - 24px));
+            width: min(720px, calc(100% - 24px));
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .profile-summary-box,
+        .profile-stats-row,
+        .ach-filters,
+        .ach-grid,
+        .ach-card {
+            max-width: 100%;
+            min-width: 0;
         }
         .profile-summary-box {
             display: flex;
@@ -939,19 +949,27 @@
         }
         .ach-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
             margin-bottom: 16px;
+            width: 100%;
         }
         .ach-card {
             display: flex;
-            align-items: center;
-            gap: 11px;
+            align-items: flex-start;
+            gap: 10px;
             padding: 11px 12px;
             border-radius: 14px;
             background: linear-gradient(180deg, #1b253b 0%, var(--panel-bg) 100%);
             border: 2px solid var(--border);
             box-shadow: 0 5px 0 #070b14;
+            overflow: hidden;
+        }
+        .ach-card-body {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .ach-card.unlocked {
             border-color: var(--gold);
@@ -1026,18 +1044,20 @@
         }
         .ach-card-head {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 6px;
+            min-width: 0;
         }
         .ach-rarity-pill {
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            padding: 1px 6px;
+            letter-spacing: 0.3px;
+            padding: 2px 6px;
             border-radius: 999px;
             flex-shrink: 0;
+            white-space: nowrap;
         }
         .rarity-rare {
             background: rgba(217, 70, 239, 0.22);
@@ -1055,10 +1075,20 @@
         .ach-progress-meta {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            gap: 6px;
             font-size: 0.7rem;
             font-weight: 800;
             color: #93c5fd;
-            margin-bottom: 3px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+        }
+        .ach-progress-meta span:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ach-progress-meta span:last-child {
+            flex-shrink: 0;
         }
         .ach-card.unlocked .ach-progress-meta {
             color: #fde68a;
@@ -1080,8 +1110,25 @@
             background: linear-gradient(90deg, #f59e0b 0%, #fde047 100%);
         }
 
-        @media (max-width: 580px) {
+        @media (max-width: 620px) {
             .ach-grid { grid-template-columns: 1fr; }
+            .profile-dialog {
+                width: calc(100% - 16px);
+                padding: 16px 14px;
+                max-height: 90vh;
+            }
+            .ach-filters {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+            .ach-filter-btn {
+                text-align: center;
+                padding: 7px 8px;
+                font-size: 0.75rem;
+            }
+        }
+        @media (max-width: 460px) {
             .profile-stats-row { grid-template-columns: 1fr; }
         }
 
@@ -1467,7 +1514,7 @@
                         </svg>
                     </div>
                     <div class="card-name">Огненный шар</div>
-                    <div class="card-desc">Снимает 1 щит цели, а если щитов нет — 2 балла.</div>
+                    <div class="card-desc">Снимает 1 щит цели, а если щитов нет - 2 балла.</div>
                     <button class="btn btn-strike" id="btn-strike" onclick="castStrike()">Запустить огонь</button>
                 </div>
 
@@ -1984,7 +2031,7 @@
         const pad = n => String(n).padStart(2, "0");
         clockEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
-        // Если наступил новый календарный день, а ошибки ещё не сбросились в UI — обновляем состояние
+        // Если наступил новый календарный день, а ошибки ещё не сбросились в UI - обновляем состояние
         if (playerReady && errorsToday >= MAX_ERRORS && errDate && errDate !== getTodayKey()) {
             errorsToday = 0;
             errDate = getTodayKey();
@@ -2278,16 +2325,16 @@
         { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", progress: s => [s.solvedTotal, 1], check: s => s.solvedTotal >= 1 },
         { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", progress: s => [s.solvedTotal, 5], check: s => s.solvedTotal >= 5 },
         { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", progress: s => [s.solvedTotal, 10], check: s => s.solvedTotal >= 10 },
-        { id: "dozen", title: "ЧЁРТОВА ДЮЖИНА", desc: "Реши 13 примеров — магия чисел на твоей стороне", medal: "bronze", rarity: "rare", progress: s => [s.solvedTotal, 13], check: s => s.solvedTotal >= 13 },
+        { id: "dozen", title: "ЧЁРТОВА ДЮЖИНА", desc: "Реши 13 примеров - магия чисел на твоей стороне", medal: "bronze", rarity: "rare", progress: s => [s.solvedTotal, 13], check: s => s.solvedTotal >= 13 },
         { id: "quarter_hundred", title: "ЧЕТВЕРТЬ СОТНИ", desc: "Реши 25 примеров правильно", medal: "silver", progress: s => [s.solvedTotal, 25], check: s => s.solvedTotal >= 25 },
-        { id: "meaning_of_life", title: "42", desc: "Реши 42 примера — ответ на главный вопрос жизни, Вселенной и всего такого", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 42], check: s => s.solvedTotal >= 42 },
+        { id: "meaning_of_life", title: "42", desc: "Реши 42 примера - ответ на главный вопрос жизни, Вселенной и всего такого", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 42], check: s => s.solvedTotal >= 42 },
         { id: "half_hundred", title: "ПОЛСОТНИ ПОБЕД", desc: "Реши 50 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 50], check: s => s.solvedTotal >= 50 },
-        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши 67 примеров", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 67], check: s => s.solvedTotal >= 67 },
+        { id: "six_seven", title: "67", desc: "SIX SEVEN - реши 67 примеров", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 67], check: s => s.solvedTotal >= 67 },
         { id: "centurion", title: "ЦЕНТУРИОН АРЕНЫ", desc: "Реши 100 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 100], check: s => s.solvedTotal >= 100 },
-        { id: "square_twelve", title: "ДЮЖИНА В КВАДРАТЕ", desc: "Реши 144 примера (12² — целый гросс!)", medal: "gold", rarity: "rare", progress: s => [s.solvedTotal, 144], check: s => s.solvedTotal >= 144 },
+        { id: "square_twelve", title: "ДЮЖИНА В КВАДРАТЕ", desc: "Реши 144 примера (12² - целый гросс!)", medal: "gold", rarity: "rare", progress: s => [s.solvedTotal, 144], check: s => s.solvedTotal >= 144 },
         { id: "double_hundred", title: "ДВЕСТИ СПАРТАНЦЕВ", desc: "Реши 200 примеров правильно", medal: "gold", progress: s => [s.solvedTotal, 200], check: s => s.solvedTotal >= 200 },
-        { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров — математическая константа 3,14 покорена", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 314], check: s => s.solvedTotal >= 314 },
-        { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров — настоящий марафонец арены", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 500], check: s => s.solvedTotal >= 500 },
+        { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров - математическая константа 3,14 покорена", medal: "elixir", rarity: "rare", progress: s => [s.solvedTotal, 314], check: s => s.solvedTotal >= 314 },
+        { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров - настоящий марафонец арены", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 500], check: s => s.solvedTotal >= 500 },
         { id: "grandmaster_1000", title: "ЛЕГЕНДА АРЕНЫ", desc: "Реши 1000 примеров за всё время турнира", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 1000], check: s => s.solvedTotal >= 1000 },
 
         // 15–21: Серии без ошибок
@@ -2307,7 +2354,7 @@
         { id: "iron_nerves", title: "СТАЛЬНЫЕ НЕРВЫ", desc: "Реши 10 примеров, балансируя на 2 ошибках за день", medal: "emerald", rarity: "epic", progress: s => [s.solvedOnEdge, 10], check: s => s.solvedOnEdge >= 10 },
 
         // 27–31: Эликсир и экономика
-        { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум — 10 капель эликсира", medal: "elixir", progress: s => [s.maxElixirReached, 10], check: s => s.maxElixirReached >= 10 },
+        { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум - 10 капель эликсира", medal: "elixir", progress: s => [s.maxElixirReached, 10], check: s => s.maxElixirReached >= 10 },
         { id: "elixir_spent_20", title: "АЛХИМИК", desc: "Потрать суммарно 20 капель эликсира на карты", medal: "silver", progress: s => [s.elixirSpent, 20], check: s => s.elixirSpent >= 20 },
         { id: "elixir_spent_50", title: "МАГИСТР ЭЛИКСИРА", desc: "Потрать суммарно 50 капель эликсира на карты", medal: "gold", progress: s => [s.elixirSpent, 50], check: s => s.elixirSpent >= 50 },
         { id: "elixir_spent_100", title: "ПОВЕЛИТЕЛЬ МАНЫ", desc: "Потрать суммарно 100 капель эликсира", medal: "emerald", rarity: "epic", progress: s => [s.elixirSpent, 100], check: s => s.elixirSpent >= 100 },
@@ -2507,7 +2554,7 @@
 
         if (filtered.length === 0) {
             const emptyMsg = currentAchFilter === "almost"
-                ? "Пока нет достижений на полпути к открытию — реши пару примеров или сыграй карту!"
+                ? "Пока нет достижений на полпути к открытию - реши пару примеров или сыграй карту!"
                 : currentAchFilter === "unlocked"
                     ? "Пока нет открытых достижений. Первый решённый пример сразу откроет награду!"
                     : "Все достижения в этой категории уже открыты!";
@@ -2532,7 +2579,7 @@
             return `
                 <div class="ach-card ${isUnlocked ? "unlocked" : (isAlmostReady ? "almost-ready" : "locked")}">
                     <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
-                    <div style="min-width:0; flex:1;">
+                    <div class="ach-card-body">
                         <div class="ach-card-head">
                             <div class="ach-card-title">${ach.title}</div>
                             ${rarityBadge}
@@ -3052,7 +3099,7 @@
                 await evaluateAndSaveProgress({}, { currentStreak: 0 });
                 if (nextErr >= MAX_ERRORS) {
                     currentAnswer = null;
-                    setLog("3-я ошибка за день зафиксирована в аккаунте — новые примеры закрыты до завтра.");
+                    setLog("3-я ошибка за день зафиксирована в аккаунте - новые примеры закрыты до завтра.");
                 } else {
                     setLog(`Мимо! Правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - nextErr}.`);
                     generateProblem();
