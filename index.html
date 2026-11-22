@@ -1314,15 +1314,15 @@
 </head>
 <body>
 <div class="app">
-    <!-- Баннер ошибок Firebase (Auth / Firestore) -->
+    <!-- Баннер уведомлений об ошибках для участников -->
     <div class="error-banner hidden" id="error-banner" role="alert">
         <div class="error-banner-head">
-            <span>⚠ Ошибка Firebase</span>
-            <button class="btn btn-slate" style="width:auto; padding:3px 10px; font-size:0.75rem;" onclick="clearErrors()">Скрыть</button>
+            <span>Упс... что-то пошло не так</span>
+            <button class="btn btn-slate" style="width:auto; padding:3px 10px; font-size:0.75rem;" onclick="clearErrors()">Понятно</button>
         </div>
         <div class="error-list" id="error-list"></div>
         <div class="error-actions hidden" id="error-actions">
-            <button class="btn btn-gold" onclick="retryInit()">Повторить</button>
+            <button class="btn btn-gold" onclick="retryInit()">Попробовать снова</button>
             <button class="btn btn-slate" onclick="handleLogout()">Выйти</button>
         </div>
     </div>
