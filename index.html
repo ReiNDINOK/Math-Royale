@@ -1646,7 +1646,7 @@
             <path d="M5 20C5 16.4 8.1 14 12 14C15.9 14 19 16.4 19 20" fill="#d97706" stroke="#fef3c7" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         <span class="rules-trigger-label">Профиль</span>
-        <span class="profile-count-pill" id="profile-ach-count">0/50</span>
+        <span class="profile-count-pill" id="profile-ach-count">0/60</span>
     </button>
 
     <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
@@ -1666,7 +1666,7 @@
             <div style="font-weight:900; color:#fde68a;" id="profile-player-name">Участник</div>
             <div style="font-size:0.82rem; color:var(--muted);" id="profile-player-team">Команда не выбрана</div>
         </div>
-        <span class="badge badge-gold" id="profile-progress-badge">Открыто: 0 из 50</span>
+        <span class="badge badge-gold" id="profile-progress-badge">Открыто: 0 из 60</span>
     </div>
     <div class="profile-stats-row">
         <div class="profile-stat-pill">
@@ -1683,7 +1683,7 @@
         </div>
     </div>
     <div class="ach-filters" id="ach-filters" role="tablist" aria-label="Фильтр достижений">
-        <button type="button" class="ach-filter-btn active" data-filter="all" onclick="setAchFilter('all')">Все (50)</button>
+        <button type="button" class="ach-filter-btn active" data-filter="all" onclick="setAchFilter('all')">Все (60)</button>
         <button type="button" class="ach-filter-btn" data-filter="almost" onclick="setAchFilter('almost')">Почти готовы</button>
         <button type="button" class="ach-filter-btn" data-filter="unlocked" onclick="setAchFilter('unlocked')">Открытые</button>
         <button type="button" class="ach-filter-btn" data-filter="locked" onclick="setAchFilter('locked')">Закрытые</button>
@@ -1819,6 +1819,8 @@
 
     let isAdminUser = false;
     let countdownInterval = null;
+    let lastOpponentScoreChangeAt = 0;
+    let lastOwnDamageAt = 0;
 
     let elixir = 0;
     let errorsToday = 0;
@@ -2271,7 +2273,32 @@
                 if (generation !== billboardGeneration) return;
                 billboardFromCache = snap.metadata.fromCache;
                 // An empty cache is not a confirmed empty tournament.
-                if (snap.exists()) liveState = snap.data();
+                if (snap.exists()) {
+                    const incoming = snap.data();
+                    if (liveState && selectedLeague && selectedClass && incoming[selectedLeague]) {
+                        const prevLeague = liveState[selectedLeague] || {};
+                        const nextLeague = incoming[selectedLeague] || {};
+                        let oppChanged = false;
+                        for (const cls of (LEAGUES[selectedLeague]?.classes || [])) {
+                            if (cls !== selectedClass) {
+                                const pScore = Number(prevLeague[cls]?.score || 0);
+                                const nScore = Number(nextLeague[cls]?.score || 0);
+                                if (pScore !== nScore) oppChanged = true;
+                            }
+                        }
+                        if (oppChanged) {
+                            lastOpponentScoreChangeAt = Date.now();
+                        }
+                        const prevOwnScore = Number(prevLeague[selectedClass]?.score || 0);
+                        const nextOwnScore = Number(nextLeague[selectedClass]?.score || 0);
+                        const prevOwnShields = Number(prevLeague[selectedClass]?.shields || 0);
+                        const nextOwnShields = Number(nextLeague[selectedClass]?.shields || 0);
+                        if (nextOwnScore < prevOwnScore || nextOwnShields < prevOwnShields) {
+                            lastOwnDamageAt = Date.now();
+                        }
+                    }
+                    liveState = incoming;
+                }
                 if (!snap.exists() && !billboardFromCache) liveState = null;
                 renderBillboard();
                 updateCountdownDisplay();
@@ -2379,7 +2406,21 @@
         { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", progress: s => [s.directHits, 3], check: s => s.directHits >= 3 },
         { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", rarity: "rare", progress: s => [s.maxThefts, 1], check: s => s.maxThefts >= 1 },
         { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", rarity: "rare", progress: s => [s.nightSolved, 1], check: s => s.nightSolved >= 1 },
-        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", rarity: "rare", progress: s => [s.earlySolved, 1], check: s => s.earlySolved >= 1 }
+        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 09:00)", medal: "silver", rarity: "rare", progress: s => [s.earlySolved, 1], check: s => s.earlySolved >= 1 },
+
+        // 51–55: Тяжёлые достижения
+        { id: "streak_150", title: "ВЕЧНЫЙ ДВИГАТЕЛЬ", desc: "Реши 150 примеров подряд без единой ошибки", medal: "emerald", rarity: "epic", progress: s => [s.bestStreak, 150], check: s => s.bestStreak >= 150 },
+        { id: "grandmaster_2000", title: "ГРОССМЕЙСТЕР АРЕНЫ", desc: "Реши 2000 примеров за всё время турнира", medal: "emerald", rarity: "epic", progress: s => [s.solvedTotal, 2000], check: s => s.solvedTotal >= 2000 },
+        { id: "armor_breaker_10", title: "ТЕХНОЛОГИЯ РАЗРУШЕНИЯ", desc: "Сбей вражеские щиты «Огненным шаром» 10 раз", medal: "emerald", rarity: "epic", progress: s => [s.shieldsBroken, 10], check: s => s.shieldsBroken >= 10 },
+        { id: "elixir_spent_250", title: "ХОЗЯИН ЭЛИКСИРА", desc: "Потрать суммарно 250 капель эликсира на карты", medal: "emerald", rarity: "epic", progress: s => [s.elixirSpent, 250], check: s => s.elixirSpent >= 250 },
+        { id: "on_the_razor_edge", title: "ПО ОСТРИЮ НОЖА", desc: "Реши 25 примеров, находясь на 2 ошибках за день", medal: "emerald", rarity: "epic", progress: s => [s.solvedOnEdge, 25], check: s => s.solvedOnEdge >= 25 },
+
+        // 56–60: Секретные достижения
+        { id: "secret_invisible_hand", title: "НЕВИДИМАЯ РУКА", desc: "Примени атаку или кражу в течение 60 сек после изменения счёта соперников", medal: "elixir", rarity: "rare", secret: true, progress: s => [s.invisibleHandCount, 1], check: s => s.invisibleHandCount >= 1 },
+        { id: "secret_last_drop", title: "ПОСЛЕДНЯЯ КАПЛЯ", desc: "Примени карту эликсира, оставив ровно 0 эликсира на счету", medal: "elixir", rarity: "rare", secret: true, progress: s => [s.zeroElixirPlays, 1], check: s => s.zeroElixirPlays >= 1 },
+        { id: "secret_golden_ratio", title: "ЗОЛОТОЕ СЕЧЕНИЕ", desc: "Реши ровно 161 пример (отсылка к φ ≈ 1,618)", medal: "gold", rarity: "rare", secret: true, progress: s => [Math.min(s.solvedTotal, 161), 161], check: s => s.solvedTotal === 161 || s.goldenRatioHit >= 1 },
+        { id: "secret_savior", title: "СПАСИТЕЛЬ", desc: "Активируй «Щит башни» в течение 2 минут после потери баллов или щита вашей команды", medal: "emerald", rarity: "epic", secret: true, progress: s => [s.counterShields, 1], check: s => s.counterShields >= 1 },
+        { id: "secret_night_watch", title: "НОЧНОЙ ДОЗОР", desc: "Реши пример в час полночи (с 00:00 до 00:59)", medal: "elixir", rarity: "rare", secret: true, progress: s => [s.midnightSolved, 1], check: s => s.midnightSolved >= 1 }
     ];
 
     function defaultStats() {
@@ -2404,7 +2445,12 @@
             directHits: 0,
             solvedOnEdge: 0,
             nightSolved: 0,
-            earlySolved: 0
+            earlySolved: 0,
+            invisibleHandCount: 0,
+            zeroElixirPlays: 0,
+            goldenRatioHit: 0,
+            counterShields: 0,
+            midnightSolved: 0
         };
     }
 
@@ -2559,32 +2605,41 @@
         }
 
         grid.innerHTML = filtered.map(({ ach, isUnlocked, prog, isAlmostReady }) => {
-            const pct = Math.round(prog.ratio * 100);
-            const rarityBadge = ach.rarity === "epic"
-                ? `<span class="ach-rarity-pill rarity-epic">Эпик</span>`
-                : ach.rarity === "rare"
-                    ? `<span class="ach-rarity-pill rarity-rare">Редкое</span>`
-                    : "";
-            const remaining = Math.max(0, prog.target - prog.current);
+            const isHiddenSecret = Boolean(ach.secret) && !isUnlocked;
+            const displayTitle = isHiddenSecret ? "СЕКРЕТНОЕ ДОСТИЖЕНИЕ" : ach.title;
+            const displayDesc = isHiddenSecret ? "Условие скрыто, пока достижение не открыто." : ach.desc;
+            const displayCurrent = isHiddenSecret ? 0 : prog.current;
+            const displayTarget = isHiddenSecret ? 1 : prog.target;
+            const pct = isHiddenSecret ? 0 : Math.round(prog.ratio * 100);
+            const rarityBadge = isHiddenSecret
+                ? `<span class="ach-rarity-pill rarity-rare">Секрет</span>`
+                : ach.rarity === "epic"
+                    ? `<span class="ach-rarity-pill rarity-epic">Эпик</span>`
+                    : ach.rarity === "rare"
+                        ? `<span class="ach-rarity-pill rarity-rare">Редкое</span>`
+                        : "";
+            const remaining = Math.max(0, displayTarget - displayCurrent);
             const statusHint = isUnlocked
                 ? "Выполнено!"
-                : prog.target > 1
-                    ? (remaining === 1 ? "Остался 1 шаг!" : `Осталось: ${remaining}`)
-                    : "Не выполнено";
+                : isHiddenSecret
+                    ? "Тайное условие"
+                    : displayTarget > 1
+                        ? (remaining === 1 ? "Остался 1 шаг!" : `Осталось: ${remaining}`)
+                        : "Не выполнено";
 
             return `
-                <div class="ach-card ${isUnlocked ? "unlocked" : (isAlmostReady ? "almost-ready" : "locked")}">
+                <div class="ach-card ${isUnlocked ? "unlocked" : (isAlmostReady && !isHiddenSecret ? "almost-ready" : "locked")}">
                     <div class="ach-medal">${MEDAL_SVGS[ach.medal] || MEDAL_SVGS.gold}</div>
                     <div class="ach-card-body">
                         <div class="ach-card-head">
-                            <div class="ach-card-title">${ach.title}</div>
+                            <div class="ach-card-title">${displayTitle}</div>
                             ${rarityBadge}
                         </div>
-                        <div class="ach-card-desc">${ach.desc}</div>
+                        <div class="ach-card-desc">${displayDesc}</div>
                         <div class="ach-progress-wrap">
                             <div class="ach-progress-meta">
                                 <span>${statusHint}</span>
-                                <span>${prog.current} / ${prog.target}</span>
+                                <span>${isHiddenSecret ? "? / ?" : `${displayCurrent} / ${displayTarget}`}</span>
                             </div>
                             <div class="ach-progress-track">
                                 <div class="ach-progress-fill" style="width:${pct}%"></div>
@@ -2816,6 +2871,8 @@
             playerStats = defaultStats();
             unlockedAchievements = {};
             shownToastIds.clear();
+            lastOpponentScoreChangeAt = 0;
+            lastOwnDamageAt = 0;
             updateProfileCounterUI();
             hide("profile-trigger-btn");
             show("auth-card");
@@ -3086,6 +3143,7 @@
                 const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
                 elixir = nextElixirVal;
                 const curHour = new Date().getHours();
+                const nextSolvedTotal = (playerStats.solvedTotal || 0) + 1;
                 await evaluateAndSaveProgress(
                     {
                         solvedTotal: 1,
@@ -3093,7 +3151,9 @@
                         currentStreak: 1,
                         solvedOnEdge: activeErrors === 2 ? 1 : 0,
                         nightSolved: (curHour >= 22 || curHour < 5) ? 1 : 0,
-                        earlySolved: (curHour >= 5 && curHour < 9) ? 1 : 0
+                        earlySolved: (curHour >= 5 && curHour < 9) ? 1 : 0,
+                        midnightSolved: curHour === 0 ? 1 : 0,
+                        goldenRatioHit: nextSolvedTotal === 161 ? 1 : 0
                     },
                     {
                         maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
@@ -3130,13 +3190,22 @@
         if (!canAct() || elixir < 3) return;
         setBusy(true);
         try {
+            const remainingElixir = elixir - 3;
+            const isCounterShield = lastOwnDamageAt > 0 && (Date.now() - lastOwnDamageAt) <= 120000;
             const batch = writeBatch(db);
-            batch.update(playerDocRef, { elixir: elixir - 3 });
+            batch.update(playerDocRef, { elixir: remainingElixir });
             batch.update(tournamentRef, {
                 [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
             });
             await batch.commit();
-            await evaluateAndSaveProgress({ cardsUsed: 1, shieldsUsed: 1, elixirSpent: 3 });
+            elixir = remainingElixir;
+            await evaluateAndSaveProgress({
+                cardsUsed: 1,
+                shieldsUsed: 1,
+                elixirSpent: 3,
+                zeroElixirPlays: remainingElixir === 0 ? 1 : 0,
+                counterShields: isCounterShield ? 1 : 0
+            });
             setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
         } catch (err) {
             showError("Карта «Щит башни»", err);
@@ -3150,13 +3219,20 @@
         if (!canAct() || elixir < 4) return;
         setBusy(true);
         try {
+            const remainingElixir = elixir - 4;
             const batch = writeBatch(db);
-            batch.update(playerDocRef, { elixir: elixir - 4 });
+            batch.update(playerDocRef, { elixir: remainingElixir });
             batch.update(tournamentRef, {
                 [`${selectedLeague}.${selectedClass}.score`]: increment(3)
             });
             await batch.commit();
-            await evaluateAndSaveProgress({ cardsUsed: 1, boostsUsed: 1, elixirSpent: 4 });
+            elixir = remainingElixir;
+            await evaluateAndSaveProgress({
+                cardsUsed: 1,
+                boostsUsed: 1,
+                elixirSpent: 4,
+                zeroElixirPlays: remainingElixir === 0 ? 1 : 0
+            });
             setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
         } catch (err) {
             showError("Карта «Ускорение»", err);
@@ -3203,10 +3279,13 @@
                         result = `Кража: от «${target}» вашей команде передано ${amount} балл(а). (-10 эликсира)`;
                     }
                 }
-                tx.update(playerRef, { elixir: energy - cost });
+                const remElixir = energy - cost;
+                tx.update(playerRef, { elixir: remElixir });
                 tx.update(tournamentRef, updates);
-                return { result, stolenAmount };
+                return { result, stolenAmount, remElixir };
             });
+            elixir = txOutcome.remElixir;
+            const isInvisibleHand = theft && lastOpponentScoreChangeAt > 0 && (Date.now() - lastOpponentScoreChangeAt) <= 60000;
             await evaluateAndSaveProgress(
                 theft
                     ? {
@@ -3214,9 +3293,16 @@
                         theftsUsed: 1,
                         elixirSpent: 10,
                         successfulThefts: txOutcome.stolenAmount > 0 ? 1 : 0,
-                        maxThefts: txOutcome.stolenAmount >= 2 ? 1 : 0
+                        maxThefts: txOutcome.stolenAmount >= 2 ? 1 : 0,
+                        zeroElixirPlays: txOutcome.remElixir === 0 ? 1 : 0,
+                        invisibleHandCount: isInvisibleHand ? 1 : 0
                     }
-                    : { cardsUsed: 1, justiceUsed: 1, elixirSpent: 5 }
+                    : {
+                        cardsUsed: 1,
+                        justiceUsed: 1,
+                        elixirSpent: 5,
+                        zeroElixirPlays: txOutcome.remElixir === 0 ? 1 : 0
+                    }
             );
             setLog(txOutcome.result);
         } catch (err) {
@@ -3247,25 +3333,30 @@
                 const targetShields = Number(target.shields || 0);
                 const targetScore = Number(target.score || 0);
 
-                tx.update(playerDocRef, { elixir: serverElixir - 6 });
+                const remElixir = serverElixir - 6;
+                tx.update(playerDocRef, { elixir: remElixir });
 
                 if (targetShields > 0) {
                     tx.update(tournamentRef, {
                         [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
                     });
-                    return { msg: `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`, shieldBroken: true, hitScore: false };
+                    return { msg: `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`, shieldBroken: true, hitScore: false, remElixir };
                 }
                 tx.update(tournamentRef, {
                     [`${selectedLeague}.${targetClass}.score`]: Math.max(0, targetScore - 2)
                 });
-                return { msg: `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`, shieldBroken: false, hitScore: targetScore > 0 };
+                return { msg: `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`, shieldBroken: false, hitScore: targetScore > 0, remElixir };
             });
+            elixir = strikeOutcome.remElixir;
+            const isInvisibleHand = lastOpponentScoreChangeAt > 0 && (Date.now() - lastOpponentScoreChangeAt) <= 60000;
             await evaluateAndSaveProgress({
                 cardsUsed: 1,
                 strikesUsed: 1,
                 elixirSpent: 6,
                 shieldsBroken: strikeOutcome.shieldBroken ? 1 : 0,
-                directHits: strikeOutcome.hitScore ? 1 : 0
+                directHits: strikeOutcome.hitScore ? 1 : 0,
+                zeroElixirPlays: strikeOutcome.remElixir === 0 ? 1 : 0,
+                invisibleHandCount: isInvisibleHand ? 1 : 0
             });
             setLog(strikeOutcome.msg);
         } catch (err) {
