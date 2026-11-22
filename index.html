@@ -1822,7 +1822,7 @@
     let errDate = "";
     let currentAnswer = null;
 
-    /* ---------- Ошибки Firebase ---------- */
+    /* ---------- Уведомления об ошибках (дружелюбный формат для участников) ---------- */
 
     function formatErrorCode(err, scope) {
         const raw = (err && err.code) ? String(err.code) : (err && err.name) ? String(err.name) : "unknown";
@@ -1830,52 +1830,48 @@
         return scope === "auth" ? `auth/${raw}` : `firestore/${raw}`;
     }
 
-    function errorHint(code) {
-        if (code.includes("permission-denied")) return "Доступ запрещён правилами Firestore. Проверьте Rules в консоли Firebase (Firestore Database → Rules).";
-        if (code.includes("unavailable") || code.includes("network-request-failed")) return "Нет связи с Firebase. Проверьте интернет и повторите.";
-        if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found") || code.includes("invalid-email")) return "Неверный логин или пароль.";
-        if (code.includes("too-many-requests")) return "Слишком много попыток входа. Подождите и повторите.";
-        if (code.includes("failed-precondition")) return "Конфликт условий операции. Попробуйте ещё раз.";
-        if (code.includes("not-found")) return "Документ mathRoyale/leaguesState не найден в Firestore.";
-        if (code.includes("unauthenticated")) return "Пользователь не авторизован. Войдите заново.";
-        if (code.includes("invalid-team-email")) return "В логине не указан класс или участник. Используйте формат вида ivanov.5@math.local или petrov.9b@math.local.";
-        return "";
+    function friendlyErrorMessage(code) {
+        if (
+            code.includes("invalid-credential") ||
+            code.includes("wrong-password") ||
+            code.includes("user-not-found") ||
+            code.includes("invalid-email") ||
+            code.includes("invalid-team-email")
+        ) {
+            return "Неверный логин или пароль. Проверь данные и попробуй ещё раз.";
+        }
+        if (code.includes("too-many-requests")) {
+            return "Слишком много попыток входа. Подожди пару минут и попробуй снова.";
+        }
+        if (code.includes("unavailable") || code.includes("network-request-failed")) {
+            return "Похоже, пропал интернет. Проверь подключение и попробуй снова.";
+        }
+        if (code.includes("permission-denied") || code.includes("unauthenticated")) {
+            return "Не удалось открыть профиль. Попробуй выйти и войти заново.";
+        }
+        if (code.includes("failed-precondition")) {
+            return "Не успели обработать действие — кто-то опередил! Попробуй ещё раз.";
+        }
+        return "Упс... не удалось выполнить действие. Попробуй ещё раз.";
     }
 
     function showError(where, err, scope = "firestore", withActions = false) {
         const code = formatErrorCode(err, scope);
-        const msg = (err && err.message) ? String(err.message) : String(err);
-        const hint = errorHint(code);
-        console.error(`[${where}]`, err);
+        const text = friendlyErrorMessage(code);
+        // Подробности оставляем только в консоли разработчика для отладки
+        console.error(`[${where}] (${code})`, err);
 
         const banner = document.getElementById("error-banner");
         const list = document.getElementById("error-list");
+        list.innerHTML = "";
+
         const item = document.createElement("div");
         item.className = "error-item";
-        const time = new Date().toLocaleTimeString("ru-RU");
-
-        const head = document.createElement("div");
-        head.innerHTML = `<strong></strong> <span class="error-code"></span>`;
-        head.querySelector("strong").textContent = `${time} • ${where}`;
-        head.querySelector(".error-code").textContent = code;
-        item.appendChild(head);
-
-        const body = document.createElement("div");
-        body.textContent = msg;
-        item.appendChild(body);
-
-        if (hint) {
-            const h = document.createElement("div");
-            h.className = "error-hint";
-            h.textContent = hint;
-            item.appendChild(h);
-        }
-
-        list.prepend(item);
-        while (list.children.length > 5) list.removeChild(list.lastChild);
+        item.textContent = text;
+        list.appendChild(item);
 
         banner.classList.remove("hidden");
-        if (withActions) document.getElementById("error-actions").classList.remove("hidden");
+        document.getElementById("error-actions").classList.toggle("hidden", !withActions);
     }
 
     window.clearErrors = function() {
