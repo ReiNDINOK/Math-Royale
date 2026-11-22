@@ -1508,7 +1508,7 @@
             <path d="M5 20C5 16.4 8.1 14 12 14C15.9 14 19 16.4 19 20" fill="#d97706" stroke="#fef3c7" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
         <span class="rules-trigger-label">Профиль</span>
-        <span class="profile-count-pill" id="profile-ach-count">0/20</span>
+        <span class="profile-count-pill" id="profile-ach-count">0/50</span>
     </button>
 
     <button class="rules-trigger" type="button" aria-label="Открыть правила игры" title="Правила игры" onclick="document.getElementById('rules-dialog').showModal()">
@@ -1528,7 +1528,7 @@
             <div style="font-weight:900; color:#fde68a;" id="profile-player-name">Участник</div>
             <div style="font-size:0.82rem; color:var(--muted);" id="profile-player-team">Команда не выбрана</div>
         </div>
-        <span class="badge badge-gold" id="profile-progress-badge">Открыто: 0 из 20</span>
+        <span class="badge badge-gold" id="profile-progress-badge">Открыто: 0 из 50</span>
     </div>
     <div class="profile-stats-row">
         <div class="profile-stat-pill">
@@ -2179,26 +2179,69 @@
     };
 
     const ACHIEVEMENTS = [
+        // 1–14: Прогресс по количеству решённых примеров (включая пасхалки)
         { id: "first_step", title: "ПЕРВЫЕ ШАГИ", desc: "Реши свой первый пример", medal: "bronze", check: s => s.solvedTotal >= 1 },
         { id: "warm_up", title: "РАЗМИНКА ОКОНЧЕНА", desc: "Реши 5 примеров правильно", medal: "bronze", check: s => s.solvedTotal >= 5 },
         { id: "ten_bullseyes", title: "ДЕСЯТКА В ЯБЛОЧКО", desc: "Реши 10 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 10 },
+        { id: "dozen", title: "ЧЁРТОВА ДЮЖИНА", desc: "Реши 13 примеров — магия чисел на твоей стороне", medal: "bronze", check: s => s.solvedTotal >= 13 },
         { id: "quarter_hundred", title: "ЧЕТВЕРТЬ СОТНИ", desc: "Реши 25 примеров правильно", medal: "silver", check: s => s.solvedTotal >= 25 },
+        { id: "meaning_of_life", title: "42", desc: "Реши 42 примера — ответ на главный вопрос жизни, Вселенной и всего такого", medal: "elixir", check: s => s.solvedTotal >= 42 },
         { id: "half_hundred", title: "ПОЛСОТНИ ПОБЕД", desc: "Реши 50 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 50 },
-        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши ровно 67 примеров", medal: "elixir", check: s => s.solvedTotal >= 67 },
+        { id: "six_seven", title: "67", desc: "SIX SEVEN — реши 67 примеров", medal: "elixir", check: s => s.solvedTotal >= 67 },
         { id: "centurion", title: "ЦЕНТУРИОН АРЕНЫ", desc: "Реши 100 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 100 },
+        { id: "square_twelve", title: "ДЮЖИНА В КВАДРАТЕ", desc: "Реши 144 примера (12² — целый гросс!)", medal: "gold", check: s => s.solvedTotal >= 144 },
+        { id: "double_hundred", title: "ДВЕСТИ СПАРТАНЦЕВ", desc: "Реши 200 примеров правильно", medal: "gold", check: s => s.solvedTotal >= 200 },
+        { id: "pi_digits", title: "ЧИСЛО ПИ", desc: "Реши 314 примеров — математическая константа 3,14 покорена", medal: "elixir", check: s => s.solvedTotal >= 314 },
+        { id: "half_thousand", title: "ПОЛТЫСЯЧИ", desc: "Реши 500 примеров — настоящий марафонец арены", medal: "emerald", check: s => s.solvedTotal >= 500 },
+        { id: "grandmaster_1000", title: "ЛЕГЕНДА АРЕНЫ", desc: "Реши 1000 примеров за всё время турнира", medal: "emerald", check: s => s.solvedTotal >= 1000 },
+
+        // 15–21: Серии без ошибок
         { id: "streak_3", title: "СЕРИЯ ТРЁХ", desc: "Реши 3 примера подряд без ошибок", medal: "bronze", check: s => s.bestStreak >= 3 },
         { id: "streak_7", title: "СНАЙПЕР", desc: "Реши 7 примеров подряд без ошибок", medal: "silver", check: s => s.bestStreak >= 7 },
         { id: "streak_15", title: "НЕПОБЕДИМЫЙ", desc: "Реши 15 примеров подряд без ошибок", medal: "gold", check: s => s.bestStreak >= 15 },
+        { id: "streak_25", title: "ЖЕЛЕЗНАЯ ЛОГИКА", desc: "Реши 25 примеров подряд без единого промаха", medal: "gold", check: s => s.bestStreak >= 25 },
+        { id: "streak_40", title: "КАЛЬКУЛЯТОР", desc: "Реши 40 примеров подряд без ошибок", medal: "elixir", check: s => s.bestStreak >= 40 },
+        { id: "streak_60", title: "БЕЗУПРЕЧНЫЙ РАЗУМ", desc: "Реши 60 примеров подряд без единой ошибки", medal: "emerald", check: s => s.bestStreak >= 60 },
+        { id: "streak_100", title: "АБСОЛЮТНАЯ ТОЧНОСТЬ", desc: "100 верных ответов подряд без промахов", medal: "emerald", check: s => s.bestStreak >= 100 },
+
+        // 22–26: Дневная активность и выживание
+        { id: "daily_10", title: "БОДРЫЙ ДЕНЬ", desc: "Реши 10 примеров за один календарный день", medal: "bronze", check: s => s.bestSolvedInDay >= 10 },
+        { id: "daily_25", title: "УДАРНАЯ СМЕНА", desc: "Реши 25 примеров за один календарный день", medal: "silver", check: s => s.bestSolvedInDay >= 25 },
+        { id: "daily_50", title: "НЕУТОМИМЫЙ", desc: "Реши 50 примеров за один календарный день", medal: "gold", check: s => s.bestSolvedInDay >= 50 },
+        { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", check: s => s.solvedOnEdge >= 1 },
+        { id: "iron_nerves", title: "СТАЛЬНЫЕ НЕРВЫ", desc: "Реши 10 примеров, балансируя на 2 ошибках за день", medal: "emerald", check: s => s.solvedOnEdge >= 10 },
+
+        // 27–31: Эликсир и экономика
         { id: "full_elixir", title: "ПОЛНЫЙ БАК", desc: "Накопи максимум — 10 капель эликсира", medal: "elixir", check: s => s.maxElixirReached >= 10 },
+        { id: "elixir_spent_20", title: "АЛХИМИК", desc: "Потрать суммарно 20 капель эликсира на карты", medal: "silver", check: s => s.elixirSpent >= 20 },
+        { id: "elixir_spent_50", title: "МАГИСТР ЭЛИКСИРА", desc: "Потрать суммарно 50 капель эликсира на карты", medal: "gold", check: s => s.elixirSpent >= 50 },
+        { id: "elixir_spent_100", title: "ПОВЕЛИТЕЛЬ МАНЫ", desc: "Потрать суммарно 100 капель эликсира", medal: "emerald", check: s => s.elixirSpent >= 100 },
         { id: "first_card", title: "ТАКТИК", desc: "Примени любую карту эликсира в первый раз", medal: "bronze", check: s => s.cardsUsed >= 1 },
+
+        // 32–34: Общее применение карт и универсальность
         { id: "card_master", title: "МАСТЕР КОЛОДЫ", desc: "Примени карты эликсира 10 раз", medal: "gold", check: s => s.cardsUsed >= 10 },
+        { id: "grand_strategist", title: "ВЕЛИКИЙ СТРАТЕГ", desc: "Примени карты эликсира 25 раз", medal: "emerald", check: s => s.cardsUsed >= 25 },
+        { id: "all_rounder", title: "ПОЛНАЯ КОЛОДА", desc: "Примени хотя бы по разу все 5 видов карт эликсира", medal: "emerald", check: s => s.shieldsUsed >= 1 && s.boostsUsed >= 1 && s.justiceUsed >= 1 && s.strikesUsed >= 1 && s.theftsUsed >= 1 },
+
+        // 35–45: Специализация по картам (Щит, Ускорение, Правосудие, Огненный шар, Кража)
         { id: "first_shield", title: "КАМЕННАЯ СТЕНА", desc: "Активируй карту «Щит башни» в первый раз", medal: "silver", check: s => s.shieldsUsed >= 1 },
+        { id: "fortress", title: "НЕПРИСТУПНАЯ КРЕПОСТЬ", desc: "Примени карту «Щит башни» 5 раз", medal: "gold", check: s => s.shieldsUsed >= 5 },
         { id: "first_boost", title: "ФОРСАЖ", desc: "Примени карту «Ускорение» в первый раз", medal: "silver", check: s => s.boostsUsed >= 1 },
+        { id: "turbo_boost", title: "ГИПЕРДВИГАТЕЛЬ", desc: "Примени карту «Ускорение» 5 раз", medal: "gold", check: s => s.boostsUsed >= 5 },
         { id: "first_justice", title: "МОЛОТ ЗАКОНА", desc: "Примени карту «Правосудие» в первый раз", medal: "gold", check: s => s.justiceUsed >= 1 },
+        { id: "supreme_judge", title: "ВЕРХОВНЫЙ СУДЬЯ", desc: "Примени карту «Правосудие» 4 раза", medal: "emerald", check: s => s.justiceUsed >= 4 },
         { id: "first_fireball", title: "ПИРОМАНТ", desc: "Запусти «Огненный шар» в первый раз", medal: "silver", check: s => s.strikesUsed >= 1 },
+        { id: "meteor_rain", title: "МЕТЕОРИТНЫЙ ДОЖДЬ", desc: "Запусти «Огненный шар» 5 раз", medal: "gold", check: s => s.strikesUsed >= 5 },
         { id: "swiper_no_swiping", title: "ЖУЛИК, НЕ ВОРУЙ", desc: "Примени навык «Кража» в первый раз", medal: "emerald", check: s => s.theftsUsed >= 1 },
         { id: "master_thief", title: "ТЕНЬ АРЕНЫ", desc: "Примени навык «Кража» 3 раза", medal: "emerald", check: s => s.theftsUsed >= 3 },
-        { id: "on_the_edge", title: "НА ГРАНИ ФОЛА", desc: "Реши пример правильно, имея 2 ошибки за день", medal: "gold", check: s => s.solvedOnEdge >= 1 }
+        { id: "phantom_raider", title: "ПРИЗРАЧНЫЙ ФАНТОМ", desc: "Успешно укради баллы у соперников 3 раза", medal: "emerald", check: s => s.successfulThefts >= 3 },
+
+        // 46–50: Боевые и ситуативные достижения
+        { id: "shield_breaker", title: "ПРОБИТИЕ БРОНИ", desc: "Сними вражеский щит «Огненным шаром»", medal: "silver", check: s => s.shieldsBroken >= 1 },
+        { id: "direct_hit", title: "ПРЯМОЕ ПОПАДАНИЕ", desc: "Сними баллы сопернику «Огненным шаром» 3 раза", medal: "gold", check: s => s.directHits >= 3 },
+        { id: "clean_heist", title: "ИДЕАЛЬНОЕ ОГРАБЛЕНИЕ", desc: "Укради сразу 2 балла за одну «Кражу»", medal: "gold", check: s => s.maxThefts >= 1 },
+        { id: "night_owl", title: "ПОЛУНОЧНИК", desc: "Реши пример в поздний час (с 22:00 до 05:00)", medal: "elixir", check: s => s.nightSolved >= 1 },
+        { id: "early_bird", title: "РАННЯЯ ПТАШКА", desc: "Реши пример ранним утром (с 05:00 до 08:00)", medal: "silver", check: s => s.earlySolved >= 1 }
     ];
 
     function defaultStats() {
@@ -2206,14 +2249,24 @@
             solvedTotal: 0,
             currentStreak: 0,
             bestStreak: 0,
+            solvedDate: "",
+            solvedToday: 0,
+            bestSolvedInDay: 0,
             maxElixirReached: 0,
+            elixirSpent: 0,
             cardsUsed: 0,
             shieldsUsed: 0,
             boostsUsed: 0,
             justiceUsed: 0,
             strikesUsed: 0,
             theftsUsed: 0,
-            solvedOnEdge: 0
+            successfulThefts: 0,
+            maxThefts: 0,
+            shieldsBroken: 0,
+            directHits: 0,
+            solvedOnEdge: 0,
+            nightSolved: 0,
+            earlySolved: 0
         };
     }
 
@@ -2260,6 +2313,11 @@
     async function evaluateAndSaveProgress(statDelta = {}, overrides = {}) {
         if (!currentUser || !playerDocRef) return;
         const nextStats = { ...playerStats };
+        const today = getTodayKey();
+        if (nextStats.solvedDate !== today) {
+            nextStats.solvedDate = today;
+            nextStats.solvedToday = 0;
+        }
         for (const [k, v] of Object.entries(statDelta)) {
             nextStats[k] = Math.max(0, Number(nextStats[k] || 0) + Number(v));
         }
@@ -2268,6 +2326,9 @@
         }
         if (nextStats.currentStreak > nextStats.bestStreak) {
             nextStats.bestStreak = nextStats.currentStreak;
+        }
+        if (nextStats.solvedToday > nextStats.bestSolvedInDay) {
+            nextStats.bestSolvedInDay = nextStats.solvedToday;
         }
         if (elixir > nextStats.maxElixirReached) {
             nextStats.maxElixirReached = elixir;
@@ -2786,11 +2847,15 @@
                 await batch.commit();
                 const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
                 elixir = nextElixirVal;
+                const curHour = new Date().getHours();
                 await evaluateAndSaveProgress(
                     {
                         solvedTotal: 1,
+                        solvedToday: 1,
                         currentStreak: 1,
-                        solvedOnEdge: activeErrors === 2 ? 1 : 0
+                        solvedOnEdge: activeErrors === 2 ? 1 : 0,
+                        nightSolved: (curHour >= 22 || curHour < 5) ? 1 : 0,
+                        earlySolved: (curHour >= 5 && curHour < 8) ? 1 : 0
                     },
                     {
                         maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
@@ -2831,7 +2896,7 @@
                 [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
             });
             await batch.commit();
-            await evaluateAndSaveProgress({ cardsUsed: 1, shieldsUsed: 1 });
+            await evaluateAndSaveProgress({ cardsUsed: 1, shieldsUsed: 1, elixirSpent: 3 });
             setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
         } catch (err) {
             showError("Карта «Щит башни»", err);
@@ -2851,7 +2916,7 @@
                 [`${selectedLeague}.${selectedClass}.score`]: increment(3)
             });
             await batch.commit();
-            await evaluateAndSaveProgress({ cardsUsed: 1, boostsUsed: 1 });
+            await evaluateAndSaveProgress({ cardsUsed: 1, boostsUsed: 1, elixirSpent: 4 });
             setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
         } catch (err) {
             showError("Карта «Ускорение»", err);
@@ -2869,7 +2934,7 @@
         if (theft && (!LEAGUES[league].classes.includes(target) || target === team)) return;
         setBusy(true);
         try {
-            const message = await runTransaction(db, async tx => {
+            const txOutcome = await runTransaction(db, async tx => {
                 const ps = await tx.get(playerRef), ts = await tx.get(tournamentRef);
                 if (!ps.exists() || !ts.exists()) throw new Error("Игровые данные не найдены");
                 const energy = Math.min(MAX_ELIXIR, Math.max(0, Number(ps.data().elixir || 0)));
@@ -2878,6 +2943,7 @@
                 if (!own) throw new Error("Команда не найдена");
                 const updates = {};
                 let result;
+                let stolenAmount = 0;
                 if (!theft) {
                     updates[`${league}.${team}.justice`] = Number(own.justice || 0) + 1;
                     result = "Правосудие защищает вашу команду от ещё одной кражи. (-5 эликсира)";
@@ -2891,6 +2957,7 @@
                     } else {
                         const score = Math.max(0, Number(victim.score || 0));
                         const amount = Math.min(2, score);
+                        stolenAmount = amount;
                         updates[`${league}.${target}.score`] = score - amount;
                         updates[`${league}.${team}.score`] = Math.max(0, Number(own.score || 0)) + amount;
                         result = `Кража: от «${target}» вашей команде передано ${amount} балл(а). (-10 эликсира)`;
@@ -2898,10 +2965,20 @@
                 }
                 tx.update(playerRef, { elixir: energy - cost });
                 tx.update(tournamentRef, updates);
-                return result;
+                return { result, stolenAmount };
             });
-            await evaluateAndSaveProgress(theft ? { cardsUsed: 1, theftsUsed: 1 } : { cardsUsed: 1, justiceUsed: 1 });
-            setLog(message);
+            await evaluateAndSaveProgress(
+                theft
+                    ? {
+                        cardsUsed: 1,
+                        theftsUsed: 1,
+                        elixirSpent: 10,
+                        successfulThefts: txOutcome.stolenAmount > 0 ? 1 : 0,
+                        maxThefts: txOutcome.stolenAmount >= 2 ? 1 : 0
+                    }
+                    : { cardsUsed: 1, justiceUsed: 1, elixirSpent: 5 }
+            );
+            setLog(txOutcome.result);
         } catch (err) {
             showError(theft ? "Карта «Кража»" : "Карта «Правосудие»", err);
             setLog("Карта не сработала: эликсир не списан.");
@@ -2917,7 +2994,7 @@
 
         setBusy(true);
         try {
-            const resultMsg = await runTransaction(db, async (tx) => {
+            const strikeOutcome = await runTransaction(db, async (tx) => {
                 const playerSnap = await tx.get(playerDocRef);
                 const tourSnap = await tx.get(tournamentRef);
                 if (!playerSnap.exists()) throw new Error("Документ игрока не найден");
@@ -2936,15 +3013,21 @@
                     tx.update(tournamentRef, {
                         [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
                     });
-                    return `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`;
+                    return { msg: `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`, shieldBroken: true, hitScore: false };
                 }
                 tx.update(tournamentRef, {
                     [`${selectedLeague}.${targetClass}.score`]: Math.max(0, targetScore - 2)
                 });
-                return `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`;
+                return { msg: `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`, shieldBroken: false, hitScore: targetScore > 0 };
             });
-            await evaluateAndSaveProgress({ cardsUsed: 1, strikesUsed: 1 });
-            setLog(resultMsg);
+            await evaluateAndSaveProgress({
+                cardsUsed: 1,
+                strikesUsed: 1,
+                elixirSpent: 6,
+                shieldsBroken: strikeOutcome.shieldBroken ? 1 : 0,
+                directHits: strikeOutcome.hitScore ? 1 : 0
+            });
+            setLog(strikeOutcome.msg);
         } catch (err) {
             showError("Карта «Огненный шар»", err);
             setLog("Карта не сработала: эликсир не списан.");
