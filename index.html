@@ -51,7 +51,7 @@
             min-height: 100vh;
             background: var(--bg-grad);
             color: var(--text);
-            padding: 16px;
+            padding: 16px 16px 132px;
             display: flex;
             justify-content: center;
         }
@@ -748,9 +748,6 @@
         }
 
         /* Плавающий стек кнопок в левом нижнем углу: Профиль над Правилами */
-        body {
-            padding-bottom: 132px;
-        }
         .corner-triggers {
             position: fixed;
             bottom: 16px;
@@ -1696,7 +1693,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction, collection, getDocs, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, increment, setDoc, getDoc, writeBatch, runTransaction, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCiqBdSM1tptnnvAIsNoQK1RGEFZK7VcJs",
@@ -1826,6 +1823,7 @@
     let errorsToday = 0;
     let errDate = "";
     let currentAnswer = null;
+    let currentProblemText = "";
 
     /* ---------- Уведомления об ошибках (дружелюбный формат для участников) ---------- */
 
@@ -2042,11 +2040,15 @@
 
     function ensureCountdownLoop() {
         updateCountdownDisplay();
-        updateDailyResetTimer();
+        if (!document.getElementById("blocked-section").classList.contains("hidden")) {
+            updateDailyResetTimer();
+        }
         if (!countdownInterval) {
             countdownInterval = setInterval(() => {
                 updateCountdownDisplay();
-                updateDailyResetTimer();
+                if (!document.getElementById("blocked-section").classList.contains("hidden")) {
+                    updateDailyResetTimer();
+                }
             }, 1000);
         }
     }
@@ -2178,33 +2180,24 @@
         try {
             const today = getTodayKey();
             const colRef = collection(db, "playerStates");
-            const snap = await getDocs(colRef);
+            const leagueQuery = query(colRef, where("league", "==", leagueKey));
+            const snap = await getDocs(leagueQuery);
             let updatedCount = 0;
-            let totalDocs = 0;
             const batch = writeBatch(db);
 
             snap.forEach((docSnap) => {
-                totalDocs++;
-                const data = docSnap.data() || {};
-                let playerLeague = data.league;
-                if (!playerLeague && data.email) {
-                    const resolved = resolveAssignmentFromEmail(data.email);
-                    if (resolved) playerLeague = resolved.league;
-                }
-                if (playerLeague === leagueKey) {
-                    batch.set(docSnap.ref, {
-                        errorsToday: 0,
-                        errDate: today
-                    }, { merge: true });
-                    updatedCount++;
-                }
+                batch.set(docSnap.ref, {
+                    errorsToday: 0,
+                    errDate: today
+                }, { merge: true });
+                updatedCount++;
             });
 
             if (updatedCount > 0) {
                 await batch.commit();
                 setAdminLog(`Счётчик ошибок (0/3) сброшен для лиги «${leagueTitle}» (обновлено профилей: ${updatedCount}).`);
             } else {
-                setAdminLog(`В лиге «${leagueTitle}» не найдено профилей в playerStates (всего документов: ${totalDocs}).`, true);
+                setAdminLog(`В лиге «${leagueTitle}» не найдено профилей в playerStates.`, true);
             }
         } catch (err) {
             const code = formatErrorCode(err, "firestore");
@@ -2237,7 +2230,8 @@
         }
     };
 
-    function startBillboardSubscription() {
+    function startBillboardSubscription(forceRestart = false) {
+        if (unsubBillboard && !forceRestart) return;
         // Ignore queued callbacks belonging to a subscription that was replaced.
         const generation = ++billboardGeneration;
         clearBillboardWait();
@@ -2321,8 +2315,7 @@
         }
     }
 
-    window.refreshBillboard = startBillboardSubscription;
-    window.addEventListener("online", startBillboardSubscription);
+    window.refreshBillboard = () => startBillboardSubscription(true);
     window.addEventListener("offline", () => {
         clearBillboardWait();
         document.getElementById("billboard-card").setAttribute("aria-busy", "false");
@@ -2333,7 +2326,7 @@
 
     /* ---------- Состояние игрока (playerStates/{uid}) ---------- */
 
-    /* ---------- Система достижений (20 тестовых ачивок) ---------- */
+    /* ---------- Система достижений (60 ачивок) ---------- */
 
     const MEDAL_SVGS = {
         bronze: `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M16 4H22L24 14H18L16 4Z" fill="#3b82f6"/><path d="M32 4H26L24 14H30L32 4Z" fill="#ef4444"/><circle cx="24" cy="28" r="14" fill="#d97706" stroke="#fde68a" stroke-width="2.5"/><circle cx="24" cy="28" r="9.5" fill="#92400e"/><path d="M24 21L26.2 25.5L31 26.2L27.5 29.6L28.3 34.4L24 32.1L19.7 34.4L20.5 29.6L17 26.2L21.8 25.5L24 21Z" fill="#fcd34d"/></svg>`,
@@ -3004,8 +2997,6 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    let currentProblemText = "";
-
     function generateProblem() {
         if (!playerReady || errorsToday >= MAX_ERRORS || !selectedLeague) return;
 
@@ -3091,6 +3082,7 @@
         document.getElementById("paused-section").classList.toggle("hidden", !paused);
         document.getElementById("problem-section").classList.toggle("hidden", paused || isBlocked);
         document.getElementById("blocked-section").classList.toggle("hidden", paused || !isBlocked);
+        if (!paused && isBlocked) updateDailyResetTimer();
 
         const hasTargets = Boolean(document.getElementById("target-select").value);
         const ready = Boolean(currentUser) && playerReady && !busy && !paused;
@@ -3386,7 +3378,7 @@
     renderTabEmblems();
     buildElixirBar();
     ensureCountdownLoop();
-    startBillboardSubscription();
+    startBillboardSubscription(false);
 </script>
 </body>
 </html>
