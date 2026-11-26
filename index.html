@@ -1797,18 +1797,28 @@
     const db = getFirestore(app);
     const tournamentRef = doc(db, "mathRoyale", "leaguesState");
 
+    // ---- Настройки экономии квоты Firestore ----
+    const FLUSH_EVERY = 5;            // верные ответы сохраняются на сервер пачкой раз в N ответов
+    const FLUSH_DELAY_MS = 20000;     // или не позже чем через 20 сек после последнего ответа
+    const POLL_PLAYER_MS = 60000;     // билборд у игроков обновляется раз в минуту
+    const POLL_ADMIN_MS = 30000;      // у организатора раз в 30 сек
+    const CARD_COST = { justice: 5, theft: 10, strike: 6 };
+    const LS_PREFIX = "mathRoyalePending_";
+
     let currentUser = null;
     let playerDocRef = null;
-    let unsubPlayerDoc = null;
+    let unsubPlayerDoc = null;        // подписка на свой документ нужна только пока игрок заблокирован (3/3 ошибок)
     let sessionToken = 0;
     let playerReady = false;
     let busy = false;
 
     let liveState = null;
-    let unsubBillboard = null;
-    let billboardGeneration = 0;
+    let billboardPollTimer = null;
+    let billboardFetching = false;
+    let lastFetchAt = 0;
+    let ensureTried = false;
     let billboardWaitTimer = null;
-    let billboardFromCache = true;
+    let billboardFromCache = false;
     let billboardMode = "single";
     let boardLeague = "league_5_7";
     let selectedLeague = null;
@@ -1824,6 +1834,12 @@
     let errDate = "";
     let currentAnswer = null;
     let currentProblemText = "";
+
+    // Локальный буфер: баллы, ещё не отправленные в общий документ турнира
+    let pendingScore = 0;
+    let playerDirty = false;          // есть изменения профиля игрока, не сохранённые на сервер
+    let flushTimer = null;
+    let flushPromise = null;
 
     /* ---------- Уведомления об ошибках (дружелюбный формат для участников) ---------- */
 
@@ -2031,6 +2047,7 @@
         if (playerReady && errorsToday >= MAX_ERRORS && errDate && errDate !== getTodayKey()) {
             errorsToday = 0;
             errDate = getTodayKey();
+            markDirty();
             updateControlsState();
             if (isGameVisible() && currentAnswer === null) {
                 generateProblem();
@@ -2099,8 +2116,8 @@
         if (!isAdminUser) return;
         const nextVal = !Boolean(liveState?.settings?.showTimer);
         try {
-            await ensureStateExists();
             await updateDoc(tournamentRef, { "settings.showTimer": nextVal });
+            fetchBillboard(true);
             setAdminLog(nextVal ? "Таймер до 28 ноября 23:59 включён для всех игроков." : "Таймер скрыт.");
         } catch (err) {
             showError("Управление таймером", err);
@@ -2112,8 +2129,8 @@
         if (!isAdminUser) return;
         const nextVal = !isArenaPaused();
         try {
-            await ensureStateExists();
             await updateDoc(tournamentRef, { "settings.arenaPaused": nextVal });
+            fetchBillboard(true);
             setAdminLog(nextVal ? "Арена поставлена на паузу: игроки видят только билборд." : "Арена снова активна!");
         } catch (err) {
             showError("Пауза арены", err);
@@ -2141,6 +2158,7 @@
             });
             const sign = delta > 0 ? `+${delta}` : `${delta}`;
             setAdminLog(`Команда «${team}» (${LEAGUES[leagueKey].title}): ${labels[field]} изменены на ${sign}.`);
+            fetchBillboard(true);
         } catch (err) {
             showError("Корректировка показателей", err);
             setAdminLog("Ошибка при изменении показателей.", true);
@@ -2224,101 +2242,122 @@
             };
             await setDoc(tournamentRef, fresh);
             setAdminLog("Все баллы, щиты и правосудие обнулены.");
+            fetchBillboard(true);
         } catch (err) {
             showError("Сброс таблицы", err);
             setAdminLog("Не удалось сбросить таблицу.", true);
         }
     };
 
-    function startBillboardSubscription(forceRestart = false) {
-        if (unsubBillboard && !forceRestart) return;
-        // Ignore queued callbacks belonging to a subscription that was replaced.
-        const generation = ++billboardGeneration;
-        clearBillboardWait();
-        if (unsubBillboard) {
-            unsubBillboard();
-            unsubBillboard = null;
-        }
-        document.getElementById("billboard-card").setAttribute("aria-busy", "true");
-        setBillboardStatus(navigator.onLine === false
-            ? "Нет подключения. Рейтинг обновится после восстановления связи."
-            : liveState ? "Обновляем рейтинг. Последние результаты остаются на экране."
-                : "Загружаем рейтинг…");
-        renderBillboard();
-        billboardWaitTimer = setTimeout(() => {
-            if (generation !== billboardGeneration) return;
-            document.getElementById("billboard-card").setAttribute("aria-busy", "false");
-            setBillboardStatus(liveState
-                ? "Показываем последние полученные результаты. Можно повторить обновление."
-                : "Загрузка занимает больше времени. Проверьте связь или нажмите «Обновить».");
-        }, 8000);
+    function setBillboardBusy(v) {
+        document.getElementById("billboard-card").setAttribute("aria-busy", v ? "true" : "false");
+    }
 
-        const handleError = (err) => {
-            if (generation !== billboardGeneration) return;
-            clearBillboardWait();
-            document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+    function getPollMs() {
+        return isAdminUser ? POLL_ADMIN_MS : POLL_PLAYER_MS;
+    }
+
+    function applyBillboardSnapshot(snap) {
+        if (snap.exists()) {
+            const incoming = snap.data();
+            if (liveState && selectedLeague && selectedClass && incoming[selectedLeague]) {
+                const prevLeague = liveState[selectedLeague] || {};
+                const nextLeague = incoming[selectedLeague] || {};
+                let oppChanged = false;
+                for (const cls of (LEAGUES[selectedLeague]?.classes || [])) {
+                    if (cls !== selectedClass) {
+                        const pScore = Number(prevLeague[cls]?.score || 0);
+                        const nScore = Number(nextLeague[cls]?.score || 0);
+                        if (pScore !== nScore) oppChanged = true;
+                    }
+                }
+                if (oppChanged) lastOpponentScoreChangeAt = Date.now();
+                const prevOwnScore = Number(prevLeague[selectedClass]?.score || 0);
+                const nextOwnScore = Number(nextLeague[selectedClass]?.score || 0);
+                const prevOwnShields = Number(prevLeague[selectedClass]?.shields || 0);
+                const nextOwnShields = Number(nextLeague[selectedClass]?.shields || 0);
+                if (nextOwnScore < prevOwnScore || nextOwnShields < prevOwnShields) {
+                    lastOwnDamageAt = Date.now();
+                }
+            }
+            liveState = incoming;
+        } else {
+            liveState = null;
+        }
+
+        // Если документа турнира (или нашей команды) нет - один раз создаём недостающее
+        if (currentUser && !ensureTried) {
+            const missing = !snap.exists() ||
+                (selectedLeague && selectedClass && !snap.data()?.[selectedLeague]?.[selectedClass]);
+            if (missing) {
+                ensureTried = true;
+                ensureStateExists().then(() => fetchBillboard(true));
+            }
+        }
+
+        renderBillboard();
+        updateCountdownDisplay();
+        syncAdminPanelUI();
+        updateControlsState();
+
+        const timeStr = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        setBillboardStatus(snap.exists()
+            ? `Рейтинг обновлён в ${timeStr}. Автообновление раз в ${Math.round(getPollMs() / 1000)} сек.`
+            : "Рейтинг ещё не создан. Он появится после инициализации игры.");
+    }
+
+    async function fetchBillboard(force = false) {
+        if (billboardFetching) return;
+        if (!force && Date.now() - lastFetchAt < 3000) return;
+        billboardFetching = true;
+        lastFetchAt = Date.now();
+        setBillboardBusy(true);
+        if (navigator.onLine === false) {
+            setBillboardStatus(liveState
+                ? "Нет подключения. Показываем последние полученные результаты."
+                : "Нет подключения. Подключитесь к интернету и нажмите «Обновить».");
+        }
+        try {
+            const snap = await getDoc(tournamentRef);
+            applyBillboardSnapshot(snap);
+        } catch (err) {
             console.warn("[Чтение билборда]", err);
             setBillboardStatus(liveState
                 ? "Показываем последние полученные результаты. Нажмите «Обновить», чтобы повторить."
                 : "Рейтинг пока недоступен. Нажмите «Обновить», чтобы повторить.");
-        };
-        try {
-            unsubBillboard = onSnapshot(tournamentRef, { includeMetadataChanges: true }, (snap) => {
-                if (generation !== billboardGeneration) return;
-                billboardFromCache = snap.metadata.fromCache;
-                // An empty cache is not a confirmed empty tournament.
-                if (snap.exists()) {
-                    const incoming = snap.data();
-                    if (liveState && selectedLeague && selectedClass && incoming[selectedLeague]) {
-                        const prevLeague = liveState[selectedLeague] || {};
-                        const nextLeague = incoming[selectedLeague] || {};
-                        let oppChanged = false;
-                        for (const cls of (LEAGUES[selectedLeague]?.classes || [])) {
-                            if (cls !== selectedClass) {
-                                const pScore = Number(prevLeague[cls]?.score || 0);
-                                const nScore = Number(nextLeague[cls]?.score || 0);
-                                if (pScore !== nScore) oppChanged = true;
-                            }
-                        }
-                        if (oppChanged) {
-                            lastOpponentScoreChangeAt = Date.now();
-                        }
-                        const prevOwnScore = Number(prevLeague[selectedClass]?.score || 0);
-                        const nextOwnScore = Number(nextLeague[selectedClass]?.score || 0);
-                        const prevOwnShields = Number(prevLeague[selectedClass]?.shields || 0);
-                        const nextOwnShields = Number(nextLeague[selectedClass]?.shields || 0);
-                        if (nextOwnScore < prevOwnScore || nextOwnShields < prevOwnShields) {
-                            lastOwnDamageAt = Date.now();
-                        }
-                    }
-                    liveState = incoming;
-                }
-                if (!snap.exists() && !billboardFromCache) liveState = null;
-                renderBillboard();
-                updateCountdownDisplay();
-                syncAdminPanelUI();
-                updateControlsState();
-                if (!billboardFromCache) {
-                    clearBillboardWait();
-                    document.getElementById("billboard-card").setAttribute("aria-busy", "false");
-                    setBillboardStatus(snap.exists()
-                        ? "Рейтинг обновлён. Результаты обновляются автоматически."
-                        : "Рейтинг ещё не создан. Он появится после инициализации игры участником.");
-                } else {
-                    setBillboardStatus(liveState
-                        ? "Показываем сохранённые результаты. Ожидаем связь с сервером."
-                        : "Ожидаем загрузку рейтинга. Можно повторить запрос кнопкой «Обновить».");
-                }
-            }, handleError);
-        } catch (err) {
-            handleError(err);
+        } finally {
+            billboardFetching = false;
+            setBillboardBusy(false);
         }
     }
 
-    window.refreshBillboard = () => startBillboardSubscription(true);
+    function scheduleBillboardPoll() {
+        clearTimeout(billboardPollTimer);
+        billboardPollTimer = setTimeout(async () => {
+            if (!document.hidden) await fetchBillboard();
+            scheduleBillboardPoll();
+        }, getPollMs());
+    }
+
+    // Вместо постоянной подписки onSnapshot - редкий опрос (экономит чтения)
+    function startBillboardSubscription(force = false) {
+        if (billboardPollTimer && !force) return;
+        setBillboardStatus(liveState ? "Обновляем рейтинг…" : "Загружаем рейтинг…");
+        fetchBillboard(true);
+        scheduleBillboardPoll();
+    }
+
+    function wakeBillboard() {
+        if (document.hidden) return;
+        if (Date.now() - lastFetchAt > getPollMs()) fetchBillboard();
+    }
+
+    window.refreshBillboard = () => {
+        if (Date.now() - lastFetchAt < 5000) return;
+        fetchBillboard(true);
+    };
     window.addEventListener("offline", () => {
-        clearBillboardWait();
-        document.getElementById("billboard-card").setAttribute("aria-busy", "false");
+        setBillboardBusy(false);
         setBillboardStatus(liveState
             ? "Нет подключения. Показываем последние полученные результаты."
             : "Нет подключения. Подключитесь к интернету и нажмите «Обновить».");
@@ -2487,8 +2526,8 @@
         setTimeout(dismiss, 5200);
     }
 
-    async function evaluateAndSaveProgress(statDelta = {}, overrides = {}) {
-        if (!currentUser || !playerDocRef) return;
+    // Чистый расчёт прогресса (без побочных эффектов) - можно вызывать внутри транзакций
+    function computeProgress(statDelta = {}, overrides = {}, elixirNow = elixir) {
         const nextStats = { ...playerStats };
         const today = getTodayKey();
         if (nextStats.solvedDate !== today) {
@@ -2507,39 +2546,37 @@
         if (nextStats.solvedToday > nextStats.bestSolvedInDay) {
             nextStats.bestSolvedInDay = nextStats.solvedToday;
         }
-        if (elixir > nextStats.maxElixirReached) {
-            nextStats.maxElixirReached = elixir;
+        if (elixirNow > nextStats.maxElixirReached) {
+            nextStats.maxElixirReached = elixirNow;
         }
-        playerStats = nextStats;
 
         const newlyUnlocked = [];
         const nextUnlocked = { ...unlockedAchievements };
         const nowIso = new Date().toISOString();
-
         for (const ach of ACHIEVEMENTS) {
             if (!nextUnlocked[ach.id] && ach.check(nextStats)) {
                 nextUnlocked[ach.id] = nowIso;
                 newlyUnlocked.push(ach);
             }
         }
-        unlockedAchievements = nextUnlocked;
-        updateProfileCounterUI();
+        return { nextStats, nextUnlocked, newlyUnlocked };
+    }
 
-        for (const ach of newlyUnlocked) {
+    // Применяет результат расчёта локально (без записи на сервер)
+    function commitProgress(res) {
+        playerStats = res.nextStats;
+        unlockedAchievements = res.nextUnlocked;
+        updateProfileCounterUI();
+        for (const ach of res.newlyUnlocked) {
             if (!shownToastIds.has(ach.id)) {
                 shownToastIds.add(ach.id);
                 showAchievementToast(ach);
             }
         }
+    }
 
-        try {
-            await setDoc(playerDocRef, {
-                stats: nextStats,
-                unlockedAchievements: nextUnlocked
-            }, { merge: true });
-        } catch (err) {
-            console.warn("[Сохранение достижений]", err);
-        }
+    function applyProgressLocal(statDelta = {}, overrides = {}) {
+        commitProgress(computeProgress(statDelta, overrides, elixir));
     }
 
     let currentAchFilter = "all";
@@ -2678,17 +2715,153 @@
         updateProfileCounterUI();
     }
 
+    /* ---------- Локальный буфер и пакетная отправка ---------- */
+
+    function lsKey(uid) { return LS_PREFIX + uid; }
+
+    // Копия несохранённых данных в localStorage: если вкладку закроют до отправки, прогресс не пропадёт
+    function persistLocal() {
+        if (!currentUser) return;
+        try {
+            if (playerDirty || pendingScore > 0) {
+                localStorage.setItem(lsKey(currentUser.uid), JSON.stringify({
+                    pendingScore, elixir, errorsToday, errDate,
+                    stats: playerStats, unlockedAchievements, ts: Date.now()
+                }));
+            } else {
+                localStorage.removeItem(lsKey(currentUser.uid));
+            }
+        } catch (e) { /* localStorage может быть недоступен */ }
+    }
+
+    function readLocalPending(uid) {
+        try {
+            const raw = localStorage.getItem(lsKey(uid));
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+
+    function markDirty() {
+        playerDirty = true;
+        persistLocal();
+    }
+
+    function buildPlayerPatch(o = {}) {
+        const today = getTodayKey();
+        return {
+            league: selectedLeague,
+            team: selectedClass,
+            elixir: o.elixir ?? elixir,
+            errorsToday: errDate === today ? errorsToday : 0,
+            errDate: today,
+            stats: o.stats ?? playerStats,
+            unlockedAchievements: o.unlocked ?? unlockedAchievements
+        };
+    }
+
+    function scheduleFlush(ms = FLUSH_DELAY_MS) {
+        if (flushTimer) return;
+        flushTimer = setTimeout(() => {
+            flushTimer = null;
+            if (busy) { scheduleFlush(3000); return; }
+            doFlush();
+        }, ms);
+    }
+
+    // Одна пачка: профиль игрока + накопленные баллы команды (2 записи на всю пачку ответов)
+    function doFlush() {
+        if (flushPromise) {
+            return flushPromise.then(ok => (ok && (playerDirty || pendingScore > 0)) ? doFlush() : ok);
+        }
+        clearTimeout(flushTimer);
+        flushTimer = null;
+        if (!currentUser || !playerDocRef || !playerReady || !selectedLeague) return Promise.resolve(false);
+        if (!playerDirty && pendingScore <= 0) return Promise.resolve(true);
+
+        const sendScore = pendingScore;
+        const league = selectedLeague, team = selectedClass, ref = playerDocRef;
+        playerDirty = false;
+        flushPromise = (async () => {
+            await null;
+            try {
+                const batch = writeBatch(db);
+                batch.update(ref, buildPlayerPatch());
+                if (sendScore > 0) {
+                    batch.update(tournamentRef, { [`${league}.${team}.score`]: increment(sendScore) });
+                }
+                await batch.commit();
+                pendingScore = Math.max(0, pendingScore - sendScore);
+                if (sendScore > 0 && liveState?.[league]?.[team]) {
+                    liveState[league][team].score = Number(liveState[league][team].score || 0) + sendScore;
+                    renderBillboard();
+                }
+                persistLocal();
+                return true;
+            } catch (err) {
+                playerDirty = true;
+                persistLocal();
+                console.warn("[Синхронизация прогресса]", err);
+                setLog("Не удалось сохранить прогресс на сервер. Повторим автоматически.");
+                scheduleFlush(15000);
+                return false;
+            } finally {
+                flushPromise = null;
+            }
+        })();
+        return flushPromise;
+    }
+
+    async function waitFlush() {
+        if (flushPromise) await flushPromise;
+    }
+
+    // Общая часть после успешной карты: локальное состояние = то, что записано на сервер
+    function afterCardCommit(remainingElixir, res, sentScore) {
+        elixir = remainingElixir;
+        pendingScore = Math.max(0, pendingScore - sentScore);
+        commitProgress(res);
+        playerDirty = false;
+        persistLocal();
+        updateControlsState();
+        fetchBillboard(true);
+    }
+
+    // Подписка на свой документ нужна только заблокированному игроку: чтобы увидеть сброс ошибок от организатора
+    function syncBlockedWatcher() {
+        const needWatch = Boolean(playerReady && playerDocRef && !isAdminUser && errorsToday >= MAX_ERRORS);
+        if (needWatch && !unsubPlayerDoc) {
+            unsubPlayerDoc = onSnapshot(playerDocRef, (docSnap) => {
+                if (!docSnap.exists() || docSnap.metadata.hasPendingWrites || playerDirty) return;
+                const d = docSnap.data();
+                if (d.errDate === getTodayKey() && Number(d.errorsToday || 0) < MAX_ERRORS && errorsToday >= MAX_ERRORS) {
+                    errorsToday = Number(d.errorsToday || 0);
+                    errDate = d.errDate;
+                    updateControlsState();
+                    if (isGameVisible() && currentAnswer === null) generateProblem();
+                }
+            }, (err) => {
+                console.warn("[Наблюдение за playerStates]", err);
+            });
+        } else if (!needWatch && unsubPlayerDoc) {
+            unsubPlayerDoc();
+            unsubPlayerDoc = null;
+        }
+    }
+
     async function loadPlayerState(user, assignment) {
         if (unsubPlayerDoc) {
             unsubPlayerDoc();
             unsubPlayerDoc = null;
         }
         playerReady = false;
+        pendingScore = 0;
+        playerDirty = false;
         playerDocRef = doc(db, "playerStates", user.uid);
         const today = getTodayKey();
 
-        const snap = await getDoc(playerDocRef);
+        const snap = await getDoc(playerDocRef);   // единственное чтение профиля за сессию
         let data;
+        let needsFlush = false;
         if (!snap.exists()) {
             data = {
                 email: user.email || "",
@@ -2701,33 +2874,40 @@
             await setDoc(playerDocRef, data);
         } else {
             data = snap.data();
-            const patch = {};
-            if (data.errDate !== today) {
-                patch.errorsToday = 0;
-                patch.errDate = today;
-            }
-            if (data.league !== assignment.league) patch.league = assignment.league;
-            if (data.team !== assignment.team) patch.team = assignment.team;
-
-            if (Object.keys(patch).length > 0) {
-                await updateDoc(playerDocRef, patch);
-                data = { ...data, ...patch };
+            if (data.league !== assignment.league || data.team !== assignment.team) {
+                data = { ...data, league: assignment.league, team: assignment.team };
+                needsFlush = true;
             }
         }
+
+        // Восстановление несохранённого прогресса (если вкладку закрыли до отправки пачки)
+        const stored = readLocalPending(user.uid);
+        if (stored && stored.stats) {
+            const serverSolved = Number(data.stats?.solvedTotal || 0);
+            const storedSolved = Number(stored.stats?.solvedTotal || 0);
+            if (storedSolved > serverSolved) {
+                const storedNewerDay = stored.errDate && stored.errDate > (data.errDate || "");
+                data = {
+                    ...data,
+                    elixir: stored.elixir,
+                    errDate: storedNewerDay ? stored.errDate : data.errDate,
+                    errorsToday: storedNewerDay ? stored.errorsToday : data.errorsToday,
+                    stats: stored.stats,
+                    unlockedAchievements: stored.unlockedAchievements || data.unlockedAchievements
+                };
+                pendingScore = Math.max(0, Number(stored.pendingScore || 0));
+                needsFlush = true;
+            }
+        }
+
         applyPlayerData(data);
         playerReady = true;
+        if (needsFlush) {
+            playerDirty = true;
+            scheduleFlush(2000);
+        }
+        persistLocal();
         updateControlsState();
-
-        unsubPlayerDoc = onSnapshot(playerDocRef, (docSnap) => {
-            if (!docSnap.exists()) return;
-            applyPlayerData(docSnap.data());
-            updateControlsState();
-            if (isGameVisible() && errorsToday < MAX_ERRORS && currentAnswer === null) {
-                generateProblem();
-            }
-        }, (err) => {
-            showError("Подписка на playerStates/" + user.uid, err);
-        });
     }
 
     function isGameVisible() {
@@ -2759,6 +2939,9 @@
 
     window.handleLogout = async function() {
         try {
+            if (playerReady) await doFlush();   // сохраняем накопленное, пока ещё есть авторизация
+        } catch (e) { /* локальная копия сохранится в localStorage */ }
+        try {
             await signOut(auth);
         } catch (err) {
             showError("Выход (Auth)", err, "auth");
@@ -2773,23 +2956,17 @@
         show("loading-card");
         document.getElementById("game-user-email").innerText = user.email || user.uid;
         currentAnswer = null;
+        ensureTried = false;
 
         if (isAdminEmail(user.email)) {
             isAdminUser = true;
-            try {
-                await ensureStateExists();
-                if (myToken !== sessionToken) return;
-                hide("loading-card");
-                document.getElementById("admin-user-email").innerText = user.email || user.uid;
-                adminPopulateTeams();
-                syncAdminPanelUI();
-                setBillboardMode("all");
-                show("admin-card");
-            } catch (err) {
-                if (myToken !== sessionToken) return;
-                hide("loading-card");
-                showError("Инициализация панели администратора", err, "firestore", true);
-            }
+            hide("loading-card");
+            document.getElementById("admin-user-email").innerText = user.email || user.uid;
+            adminPopulateTeams();
+            syncAdminPanelUI();
+            setBillboardMode("all");
+            show("admin-card");
+            startBillboardSubscription(true);
             return;
         }
 
@@ -2813,11 +2990,10 @@
             await loadPlayerState(user, assignment);
             if (myToken !== sessionToken) return;
 
-            await ensureStateExists();
-            if (myToken !== sessionToken) return;
-
             hide("loading-card");
             openGameView();
+            // Данные билборда уже загружены опросом; перечитываем только если не хватает нашей команды
+            if (!liveState?.[selectedLeague]?.[selectedClass]) fetchBillboard(true);
         } catch (err) {
             if (myToken !== sessionToken) return;
             hide("loading-card");
@@ -2842,9 +3018,13 @@
                 unsubPlayerDoc();
                 unsubPlayerDoc = null;
             }
+            clearTimeout(flushTimer);
+            flushTimer = null;
             playerDocRef = null;
             playerReady = false;
             isAdminUser = false;
+            pendingScore = 0;
+            playerDirty = false;
             elixir = 0;
             errorsToday = 0;
             errDate = "";
@@ -2902,7 +3082,7 @@
         const rows = cfg.classes
             .map(cls => ({
                 cls,
-                score: Number(leagueData[cls]?.score || 0),
+                score: Number(leagueData[cls]?.score || 0) + ((!isAdminUser && leagueKey === selectedLeague && cls === selectedClass) ? pendingScore : 0),
                 shields: Number(leagueData[cls]?.shields || 0),
                 justice: Number(leagueData[cls]?.justice || 0)
             }))
@@ -3083,6 +3263,7 @@
         document.getElementById("problem-section").classList.toggle("hidden", paused || isBlocked);
         document.getElementById("blocked-section").classList.toggle("hidden", paused || !isBlocked);
         if (!paused && isBlocked) updateDailyResetTimer();
+        syncBlockedWatcher();
 
         const hasTargets = Boolean(document.getElementById("target-select").value);
         const ready = Boolean(currentUser) && playerReady && !busy && !paused;
@@ -3114,67 +3295,62 @@
         if (Number.isNaN(val)) return;
 
         const today = getTodayKey();
-        const activeErrors = errDate === today ? errorsToday : 0;
+        if (errDate !== today) {
+            errDate = today;
+            errorsToday = 0;
+        }
+        const activeErrors = errorsToday;
         const answerAtSubmit = currentAnswer;
         const problemAtSubmit = currentProblemText;
         currentAnswer = null;
 
-        setBusy(true);
-        try {
-            if (val === answerAtSubmit) {
-                const batch = writeBatch(db);
-                batch.update(playerDocRef, {
-                    elixir: Math.min(MAX_ELIXIR, elixir + 1),
-                    errDate: today,
-                    errorsToday: activeErrors
-                });
-                batch.update(tournamentRef, {
-                    [`${selectedLeague}.${selectedClass}.score`]: increment(1)
-                });
-                await batch.commit();
-                const nextElixirVal = Math.min(MAX_ELIXIR, elixir + 1);
-                elixir = nextElixirVal;
-                const curHour = new Date().getHours();
-                const nextSolvedTotal = (playerStats.solvedTotal || 0) + 1;
-                await evaluateAndSaveProgress(
-                    {
-                        solvedTotal: 1,
-                        solvedToday: 1,
-                        currentStreak: 1,
-                        solvedOnEdge: activeErrors === 2 ? 1 : 0,
-                        nightSolved: (curHour >= 22 || curHour < 5) ? 1 : 0,
-                        earlySolved: (curHour >= 5 && curHour < 9) ? 1 : 0,
-                        midnightSolved: curHour === 0 ? 1 : 0,
-                        goldenRatioHit: nextSolvedTotal === 161 ? 1 : 0
-                    },
-                    {
-                        maxElixirReached: Math.max(playerStats.maxElixirReached || 0, nextElixirVal)
-                    }
-                );
-                setLog("Точно в цель! +1 балл и +1 эликсир.");
-                generateProblem();
+        if (val === answerAtSubmit) {
+            // Верный ответ: всё считается локально, на сервер уходит пачкой
+            elixir = Math.min(MAX_ELIXIR, elixir + 1);
+            pendingScore += 1;
+            const curHour = new Date().getHours();
+            const nextSolvedTotal = (playerStats.solvedTotal || 0) + 1;
+            applyProgressLocal(
+                {
+                    solvedTotal: 1,
+                    solvedToday: 1,
+                    currentStreak: 1,
+                    solvedOnEdge: activeErrors === 2 ? 1 : 0,
+                    nightSolved: (curHour >= 22 || curHour < 5) ? 1 : 0,
+                    earlySolved: (curHour >= 5 && curHour < 9) ? 1 : 0,
+                    midnightSolved: curHour === 0 ? 1 : 0,
+                    goldenRatioHit: nextSolvedTotal === 161 ? 1 : 0
+                },
+                { maxElixirReached: Math.max(playerStats.maxElixirReached || 0, elixir) }
+            );
+            markDirty();
+            updateControlsState();
+            renderBillboard();
+            setLog("Точно в цель! +1 балл и +1 эликсир.");
+            generateProblem();
+            if (pendingScore >= FLUSH_EVERY && !flushPromise) doFlush();
+            else scheduleFlush();
+        } else {
+            // Ошибки сохраняем сразу, чтобы лимит 3/3 нельзя было обойти перезагрузкой
+            errorsToday = activeErrors + 1;
+            errDate = today;
+            applyProgressLocal({}, { currentStreak: 0 });
+            markDirty();
+            updateControlsState();
+            if (errorsToday >= MAX_ERRORS) {
+                currentAnswer = null;
+                setLog("3-я ошибка за день зафиксирована в аккаунте - новые примеры закрыты до завтра.");
             } else {
-                const nextErr = activeErrors + 1;
-                await updateDoc(playerDocRef, {
-                    errorsToday: nextErr,
-                    errDate: today
-                });
-                await evaluateAndSaveProgress({}, { currentStreak: 0 });
-                if (nextErr >= MAX_ERRORS) {
-                    currentAnswer = null;
-                    setLog("3-я ошибка за день зафиксирована в аккаунте - новые примеры закрыты до завтра.");
-                } else {
-                    const label = problemAtSubmit ? ` (${problemAtSubmit})` : "";
-                    setLog(`Мимо${label}! Введено: ${val}, правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - nextErr}.`);
-                    generateProblem();
-                }
+                const label = problemAtSubmit ? ` (${problemAtSubmit})` : "";
+                setLog(`Мимо${label}! Введено: ${val}, правильный ответ: ${answerAtSubmit}. Осталось попыток сегодня: ${MAX_ERRORS - errorsToday}.`);
+                generateProblem();
             }
-        } catch (err) {
-            currentAnswer = answerAtSubmit;
-            showError("Ответ на пример", err);
-            setLog("Не удалось сохранить результат: данные не изменились.");
-        } finally {
-            setBusy(false);
+            setBusy(true);
+            try {
+                await doFlush();
+            } finally {
+                setBusy(false);
+            }
         }
     };
 
@@ -3182,22 +3358,25 @@
         if (!canAct() || elixir < 3) return;
         setBusy(true);
         try {
-            const remainingElixir = elixir - 3;
+            await waitFlush();
+            if (elixir < 3) return;
+            const sendScore = pendingScore;
+            const remaining = elixir - 3;
             const isCounterShield = lastOwnDamageAt > 0 && (Date.now() - lastOwnDamageAt) <= 120000;
-            const batch = writeBatch(db);
-            batch.update(playerDocRef, { elixir: remainingElixir });
-            batch.update(tournamentRef, {
-                [`${selectedLeague}.${selectedClass}.shields`]: increment(1)
-            });
-            await batch.commit();
-            elixir = remainingElixir;
-            await evaluateAndSaveProgress({
+            const res = computeProgress({
                 cardsUsed: 1,
                 shieldsUsed: 1,
                 elixirSpent: 3,
-                zeroElixirPlays: remainingElixir === 0 ? 1 : 0,
+                zeroElixirPlays: remaining === 0 ? 1 : 0,
                 counterShields: isCounterShield ? 1 : 0
-            });
+            }, {}, remaining);
+            const batch = writeBatch(db);
+            batch.update(playerDocRef, buildPlayerPatch({ elixir: remaining, stats: res.nextStats, unlocked: res.nextUnlocked }));
+            const tUpdate = { [`${selectedLeague}.${selectedClass}.shields`]: increment(1) };
+            if (sendScore > 0) tUpdate[`${selectedLeague}.${selectedClass}.score`] = increment(sendScore);
+            batch.update(tournamentRef, tUpdate);
+            await batch.commit();
+            afterCardCommit(remaining, res, sendScore);
             setLog(`Щит башни поднят для «${selectedClass}» (-3 эликсира).`);
         } catch (err) {
             showError("Карта «Щит башни»", err);
@@ -3211,20 +3390,23 @@
         if (!canAct() || elixir < 4) return;
         setBusy(true);
         try {
-            const remainingElixir = elixir - 4;
-            const batch = writeBatch(db);
-            batch.update(playerDocRef, { elixir: remainingElixir });
-            batch.update(tournamentRef, {
-                [`${selectedLeague}.${selectedClass}.score`]: increment(3)
-            });
-            await batch.commit();
-            elixir = remainingElixir;
-            await evaluateAndSaveProgress({
+            await waitFlush();
+            if (elixir < 4) return;
+            const sendScore = pendingScore;
+            const remaining = elixir - 4;
+            const res = computeProgress({
                 cardsUsed: 1,
                 boostsUsed: 1,
                 elixirSpent: 4,
-                zeroElixirPlays: remainingElixir === 0 ? 1 : 0
+                zeroElixirPlays: remaining === 0 ? 1 : 0
+            }, {}, remaining);
+            const batch = writeBatch(db);
+            batch.update(playerDocRef, buildPlayerPatch({ elixir: remaining, stats: res.nextStats, unlocked: res.nextUnlocked }));
+            batch.update(tournamentRef, {
+                [`${selectedLeague}.${selectedClass}.score`]: increment(3 + sendScore)
             });
+            await batch.commit();
+            afterCardCommit(remaining, res, sendScore);
             setLog(`Ускорение сработало: +3 балла для «${selectedClass}» (-4 эликсира).`);
         } catch (err) {
             showError("Карта «Ускорение»", err);
@@ -3234,130 +3416,100 @@
         }
     };
 
-    async function castNewCard(theft) {
+    // Правосудие, Кража, Огненный шар: одна транзакция = 1 чтение + 2 записи
+    // (в неё же попадают накопленные баллы и обновлённый профиль игрока)
+    async function castTargetCard(kind) {
+        const cost = CARD_COST[kind];
         const target = document.getElementById("target-select").value;
-        const cost = theft ? 10 : 5;
         if (!canAct() || elixir < cost) return;
+        if (kind !== "justice") {
+            if (!target || !LEAGUES[selectedLeague].classes.includes(target) || target === selectedClass) return;
+        }
         const league = selectedLeague, team = selectedClass, playerRef = playerDocRef;
-        if (theft && (!LEAGUES[league].classes.includes(target) || target === team)) return;
+        const scoreKey = `${league}.${team}.score`;
+        const titles = { justice: "Карта «Правосудие»", theft: "Карта «Кража»", strike: "Карта «Огненный шар»" };
+
         setBusy(true);
         try {
-            const txOutcome = await runTransaction(db, async tx => {
-                const ps = await tx.get(playerRef), ts = await tx.get(tournamentRef);
-                if (!ps.exists() || !ts.exists()) throw new Error("Игровые данные не найдены");
-                const energy = Math.min(MAX_ELIXIR, Math.max(0, Number(ps.data().elixir || 0)));
-                if (energy < cost) throw new Error("Недостаточно эликсира");
-                const own = ts.data()?.[league]?.[team];
+            await waitFlush();
+            if (elixir < cost) return;
+            const sendScore = pendingScore;
+            const remElixir = elixir - cost;
+            const isInvisibleHand = kind !== "justice" && lastOpponentScoreChangeAt > 0 && (Date.now() - lastOpponentScoreChangeAt) <= 60000;
+
+            const out = await runTransaction(db, async (tx) => {
+                const ts = await tx.get(tournamentRef);
+                if (!ts.exists()) throw new Error("Документ mathRoyale/leaguesState не найден");
+                const tdata = ts.data();
+                const own = tdata?.[league]?.[team];
                 if (!own) throw new Error("Команда не найдена");
+
+                const ownScoreBase = Math.max(0, Number(own.score || 0)) + sendScore;
                 const updates = {};
+                const delta = { cardsUsed: 1, elixirSpent: cost, zeroElixirPlays: remElixir === 0 ? 1 : 0 };
                 let result;
-                let stolenAmount = 0;
-                if (!theft) {
-                    updates[`${league}.${team}.justice`] = Number(own.justice || 0) + 1;
+
+                if (kind === "justice") {
+                    updates[`${league}.${team}.justice`] = Math.max(0, Number(own.justice || 0)) + 1;
+                    if (sendScore > 0) updates[scoreKey] = ownScoreBase;
+                    delta.justiceUsed = 1;
                     result = "Правосудие защищает вашу команду от ещё одной кражи. (-5 эликсира)";
                 } else {
-                    const victim = ts.data()?.[league]?.[target];
+                    const victim = tdata?.[league]?.[target];
                     if (!victim) throw new Error("Цель не найдена");
-                    const protection = Math.max(0, Number(victim.justice || 0));
-                    if (protection > 0) {
-                        updates[`${league}.${target}.justice`] = protection - 1;
-                        result = `Правосудие команды «${target}» отразило кражу. Баллы не изменились. (-10 эликсира)`;
+                    delta.invisibleHandCount = isInvisibleHand ? 1 : 0;
+
+                    if (kind === "theft") {
+                        delta.theftsUsed = 1;
+                        const protection = Math.max(0, Number(victim.justice || 0));
+                        if (protection > 0) {
+                            updates[`${league}.${target}.justice`] = protection - 1;
+                            if (sendScore > 0) updates[scoreKey] = ownScoreBase;
+                            result = `Правосудие команды «${target}» отразило кражу. Баллы не изменились. (-10 эликсира)`;
+                        } else {
+                            const score = Math.max(0, Number(victim.score || 0));
+                            const amount = Math.min(2, score);
+                            updates[`${league}.${target}.score`] = score - amount;
+                            updates[scoreKey] = ownScoreBase + amount;
+                            delta.successfulThefts = amount > 0 ? 1 : 0;
+                            delta.maxThefts = amount >= 2 ? 1 : 0;
+                            result = `Кража: от «${target}» вашей команде передано ${amount} балл(а). (-10 эликсира)`;
+                        }
                     } else {
-                        const score = Math.max(0, Number(victim.score || 0));
-                        const amount = Math.min(2, score);
-                        stolenAmount = amount;
-                        updates[`${league}.${target}.score`] = score - amount;
-                        updates[`${league}.${team}.score`] = Math.max(0, Number(own.score || 0)) + amount;
-                        result = `Кража: от «${target}» вашей команде передано ${amount} балл(а). (-10 эликсира)`;
+                        delta.strikesUsed = 1;
+                        const targetShields = Number(victim.shields || 0);
+                        const targetScore = Number(victim.score || 0);
+                        if (targetShields > 0) {
+                            updates[`${league}.${target}.shields`] = targetShields - 1;
+                            delta.shieldsBroken = 1;
+                            result = `Огненный шар по «${target}» отражён щитом! (-6 эликсира)`;
+                        } else {
+                            updates[`${league}.${target}.score`] = Math.max(0, targetScore - 2);
+                            delta.directHits = targetScore > 0 ? 1 : 0;
+                            result = `Огненный шар попал! «${target}» потерял 2 балла (-6 эликсира).`;
+                        }
+                        if (sendScore > 0) updates[scoreKey] = ownScoreBase;
                     }
                 }
-                const remElixir = energy - cost;
-                tx.update(playerRef, { elixir: remElixir });
+
+                const res = computeProgress(delta, {}, remElixir);
                 tx.update(tournamentRef, updates);
-                return { result, stolenAmount, remElixir };
+                tx.update(playerRef, buildPlayerPatch({ elixir: remElixir, stats: res.nextStats, unlocked: res.nextUnlocked }));
+                return { result, res };
             });
-            elixir = txOutcome.remElixir;
-            const isInvisibleHand = theft && lastOpponentScoreChangeAt > 0 && (Date.now() - lastOpponentScoreChangeAt) <= 60000;
-            await evaluateAndSaveProgress(
-                theft
-                    ? {
-                        cardsUsed: 1,
-                        theftsUsed: 1,
-                        elixirSpent: 10,
-                        successfulThefts: txOutcome.stolenAmount > 0 ? 1 : 0,
-                        maxThefts: txOutcome.stolenAmount >= 2 ? 1 : 0,
-                        zeroElixirPlays: txOutcome.remElixir === 0 ? 1 : 0,
-                        invisibleHandCount: isInvisibleHand ? 1 : 0
-                    }
-                    : {
-                        cardsUsed: 1,
-                        justiceUsed: 1,
-                        elixirSpent: 5,
-                        zeroElixirPlays: txOutcome.remElixir === 0 ? 1 : 0
-                    }
-            );
-            setLog(txOutcome.result);
+
+            afterCardCommit(remElixir, out.res, sendScore);
+            setLog(out.result);
         } catch (err) {
-            showError(theft ? "Карта «Кража»" : "Карта «Правосудие»", err);
-            setLog("Карта не сработала: эликсир не списан.");
-        } finally { setBusy(false); }
-    }
-    window.castTheft = () => castNewCard(true);
-    window.castJustice = () => castNewCard(false);
-
-    window.castStrike = async function() {
-        const targetClass = document.getElementById("target-select").value;
-        if (!canAct() || elixir < 6 || !targetClass) return;
-        if (!LEAGUES[selectedLeague].classes.includes(targetClass) || targetClass === selectedClass) return;
-
-        setBusy(true);
-        try {
-            const strikeOutcome = await runTransaction(db, async (tx) => {
-                const playerSnap = await tx.get(playerDocRef);
-                const tourSnap = await tx.get(tournamentRef);
-                if (!playerSnap.exists()) throw new Error("Документ игрока не найден");
-                if (!tourSnap.exists()) throw new Error("Документ mathRoyale/leaguesState не найден");
-
-                const serverElixir = Math.min(MAX_ELIXIR, Math.max(0, Number(playerSnap.data().elixir || 0)));
-                if (serverElixir < 6) throw new Error("Недостаточно эликсира (по данным сервера)");
-
-                const target = tourSnap.data()?.[selectedLeague]?.[targetClass] || {};
-                const targetShields = Number(target.shields || 0);
-                const targetScore = Number(target.score || 0);
-
-                const remElixir = serverElixir - 6;
-                tx.update(playerDocRef, { elixir: remElixir });
-
-                if (targetShields > 0) {
-                    tx.update(tournamentRef, {
-                        [`${selectedLeague}.${targetClass}.shields`]: targetShields - 1
-                    });
-                    return { msg: `Огненный шар по «${targetClass}» отражён щитом! (-6 эликсира)`, shieldBroken: true, hitScore: false, remElixir };
-                }
-                tx.update(tournamentRef, {
-                    [`${selectedLeague}.${targetClass}.score`]: Math.max(0, targetScore - 2)
-                });
-                return { msg: `Огненный шар попал! «${targetClass}» потерял 2 балла (-6 эликсира).`, shieldBroken: false, hitScore: targetScore > 0, remElixir };
-            });
-            elixir = strikeOutcome.remElixir;
-            const isInvisibleHand = lastOpponentScoreChangeAt > 0 && (Date.now() - lastOpponentScoreChangeAt) <= 60000;
-            await evaluateAndSaveProgress({
-                cardsUsed: 1,
-                strikesUsed: 1,
-                elixirSpent: 6,
-                shieldsBroken: strikeOutcome.shieldBroken ? 1 : 0,
-                directHits: strikeOutcome.hitScore ? 1 : 0,
-                zeroElixirPlays: strikeOutcome.remElixir === 0 ? 1 : 0,
-                invisibleHandCount: isInvisibleHand ? 1 : 0
-            });
-            setLog(strikeOutcome.msg);
-        } catch (err) {
-            showError("Карта «Огненный шар»", err);
+            showError(titles[kind], err);
             setLog("Карта не сработала: эликсир не списан.");
         } finally {
             setBusy(false);
         }
-    };
+    }
+    window.castTheft = () => castTargetCard("theft");
+    window.castJustice = () => castTargetCard("justice");
+    window.castStrike = () => castTargetCard("strike");
 
     const passwordInput = document.getElementById("login-password");
     const togglePasswordBtn = document.getElementById("toggle-password-btn");
@@ -3374,6 +3526,18 @@
     document.getElementById("answer-input").addEventListener("keydown", (e) => {
         if (e.key === "Enter") window.submitAnswer();
     });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            if (playerReady && (playerDirty || pendingScore > 0) && !busy) doFlush();
+        } else {
+            wakeBillboard();
+        }
+    });
+    window.addEventListener("pagehide", () => {
+        if (playerReady && (playerDirty || pendingScore > 0)) doFlush();
+    });
+    ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, wakeBillboard, { passive: true }));
 
     renderTabEmblems();
     buildElixirBar();
