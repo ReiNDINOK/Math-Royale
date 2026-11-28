@@ -1217,6 +1217,78 @@
             color: #fef3c7;
         }
 
+        /* Режим «Подведение итогов» на билборде при активной паузе */
+        .league-stage {
+            position: relative;
+        }
+        .league-stage.is-tallying .leaderboard {
+            filter: blur(5px) brightness(0.55);
+            user-select: none;
+            pointer-events: none;
+        }
+        .league-stage.is-tallying .score-val {
+            color: transparent !important;
+            text-shadow: none !important;
+        }
+        .wood-sign-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            pointer-events: none;
+        }
+        .wood-sign-plaque {
+            position: relative;
+            background:
+                repeating-linear-gradient(
+                    94deg,
+                    rgba(54, 27, 9, 0.28) 0px,
+                    rgba(54, 27, 9, 0.28) 3px,
+                    rgba(180, 118, 62, 0.14) 3px,
+                    rgba(180, 118, 62, 0.14) 9px
+                ),
+                linear-gradient(180deg, #9c5a27 0%, #783f16 55%, #5c2e0e 100%);
+            border: 3px solid #3d1d07;
+            border-bottom-width: 6px;
+            border-radius: 10px 14px 11px 13px;
+            padding: 9px 18px;
+            color: #fde68a;
+            font-weight: 900;
+            font-size: 0.96rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 0 #2b1304, 0 0 10px rgba(0, 0, 0, 0.75);
+            box-shadow:
+                0 8px 18px rgba(0, 0, 0, 0.72),
+                inset 0 2px 0 rgba(253, 224, 71, 0.28),
+                inset 0 -3px 0 rgba(36, 15, 3, 0.65);
+            transform: rotate(-2.4deg);
+            text-align: center;
+            line-height: 1.2;
+        }
+        .league-column .wood-sign-plaque {
+            font-size: 0.82rem;
+            padding: 8px 12px;
+            transform: rotate(-2.8deg);
+        }
+        .wood-sign-plaque::before,
+        .wood-sign-plaque::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #cbd5e1 0%, #475569 75%);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+        .wood-sign-plaque::before { left: 7px; }
+        .wood-sign-plaque::after { right: 7px; }
+
         /* Панель администратора */
         .admin-card {
             border-color: var(--gold);
@@ -1617,17 +1689,20 @@
             </div>
         </div>
 
-        <!-- 4. Массовые действия и резервная копия -->
+        <!-- 4. Выгрузка игроков, массовые действия и резервная копия -->
         <div class="admin-section">
-            <div class="admin-section-title">Сервисные действия и резервная копия</div>
-            <div class="admin-grid-2">
+            <div class="admin-section-title">Выгрузка игроков и резервная копия</div>
+            <div class="admin-grid-2" style="margin-bottom:8px;">
+                <button type="button" class="btn btn-gold" id="btn-export-players-csv" onclick="adminExportPlayersCSV()">
+                    📊 Выгрузить игроков и ачивки (CSV)
+                </button>
                 <button type="button" class="btn btn-slate" onclick="adminExportSnapshot()">
                     📥 Скачать снимок таблицы (JSON)
                 </button>
-                <button type="button" class="btn btn-strike" onclick="adminResetAllScores()">
-                    🗑 Сбросить все баллы и эффекты
-                </button>
             </div>
+            <button type="button" class="btn btn-strike" onclick="adminResetAllScores()">
+                🗑 Сбросить все баллы и эффекты
+            </button>
         </div>
 
         <div class="admin-log" id="admin-log"></div>
@@ -2162,6 +2237,133 @@
         } catch (err) {
             showError("Корректировка показателей", err);
             setAdminLog("Ошибка при изменении показателей.", true);
+        }
+    };
+
+    function escapeCsvCell(val) {
+        const s = String(val ?? "");
+        const safe = /^[=+\-@]/.test(s) ? "'" + s : s;
+        return `"${safe.replace(/"/g, '""')}"`;
+    }
+
+    window.adminExportPlayersCSV = async function() {
+        if (!isAdminUser) return;
+        const btn = document.getElementById("btn-export-players-csv");
+        if (btn) btn.disabled = true;
+        setAdminLog("Собираем данные игроков и достижений…");
+
+        try {
+            const snap = await getDocs(collection(db, "playerStates"));
+            if (snap.empty) {
+                setAdminLog("В коллекции playerStates пока нет записей игроков.", true);
+                return;
+            }
+
+            const rows = [];
+            snap.forEach((docSnap) => {
+                const d = docSnap.data() || {};
+                const st = d.stats || {};
+                const unlockedObj = (d.unlockedAchievements && typeof d.unlockedAchievements === "object")
+                    ? d.unlockedAchievements
+                    : {};
+                const unlockedIds = Object.keys(unlockedObj);
+                const unlockedTitles = unlockedIds.map(id => {
+                    const found = ACHIEVEMENTS.find(a => a.id === id);
+                    return found ? found.title : id;
+                });
+
+                rows.push({
+                    uid: docSnap.id,
+                    email: d.email || "",
+                    league: LEAGUES[d.league]?.title || d.league || "",
+                    team: d.team || "",
+                    solvedTotal: Number(st.solvedTotal || 0),
+                    solvedToday: Number(st.solvedToday || 0),
+                    bestStreak: Number(st.bestStreak || 0),
+                    currentStreak: Number(st.currentStreak || 0),
+                    bestSolvedInDay: Number(st.bestSolvedInDay || 0),
+                    achievementsCount: unlockedIds.length,
+                    achievementsTotal: ACHIEVEMENTS.length,
+                    cardsUsed: Number(st.cardsUsed || 0),
+                    elixirSpent: Number(st.elixirSpent || 0),
+                    elixirNow: Number(d.elixir || 0),
+                    errorsToday: Number(d.errorsToday || 0),
+                    achievementsList: unlockedTitles.join(", ")
+                });
+            });
+
+            // Сортировка: сначала по числу достижений, затем по решённым примерам и лучшей серии
+            rows.sort((a, b) =>
+                b.achievementsCount - a.achievementsCount ||
+                b.solvedTotal - a.solvedTotal ||
+                b.bestStreak - a.bestStreak ||
+                a.email.localeCompare(b.email, "ru")
+            );
+
+            const headers = [
+                "Место",
+                "Логин / Email",
+                "Лига",
+                "Команда",
+                "Достижений",
+                "Всего ачивок",
+                "Решено всего",
+                "Решено сегодня",
+                "Лучшая серия",
+                "Текущая серия",
+                "Рекорд за день",
+                "Карт сыграно",
+                "Эликсира потрачено",
+                "Эликсира сейчас",
+                "Ошибок сегодня",
+                "Открытые достижения",
+                "UID"
+            ];
+
+            const csvLines = [
+                headers.map(escapeCsvCell).join(";"),
+                ...rows.map((r, idx) => [
+                    idx + 1,
+                    r.email,
+                    r.league,
+                    r.team,
+                    r.achievementsCount,
+                    r.achievementsTotal,
+                    r.solvedTotal,
+                    r.solvedToday,
+                    r.bestStreak,
+                    r.currentStreak,
+                    r.bestSolvedInDay,
+                    r.cardsUsed,
+                    r.elixirSpent,
+                    r.elixirNow,
+                    r.errorsToday,
+                    r.achievementsList,
+                    r.uid
+                ].map(escapeCsvCell).join(";"))
+            ];
+
+            const blob = new Blob(["\uFEFF" + csvLines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `math-royale-players-${getTodayKey()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+
+            setAdminLog(`Выгружено игроков: ${rows.length}. Файл math-royale-players-${getTodayKey()}.csv сохранён.`);
+        } catch (err) {
+            const code = formatErrorCode(err, "firestore");
+            showError("Выгрузка игроков (CSV)", err);
+            if (code.includes("permission-denied")) {
+                setAdminLog("Нет прав на чтение всей коллекции playerStates — проверьте Firestore Rules для admin.", true);
+            } else {
+                setAdminLog(`Ошибка выгрузки игроков (${code}).`, true);
+            }
+        } finally {
+            if (btn) btn.disabled = false;
         }
     };
 
@@ -3075,7 +3277,7 @@
         renderBillboard();
     };
 
-    function renderLeagueRowsHtml(leagueKey) {
+    function renderLeagueRowsHtml(leagueKey, tallying = false) {
         const cfg = LEAGUES[leagueKey];
         const leagueData = liveState?.[leagueKey] || {};
 
@@ -3116,15 +3318,28 @@
                         ${shieldHtml}
                         ${item.justice > 0 ? `<span class="badge badge-justice" title="Правосудие" aria-label="Правосудие: ${item.justice}"><svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M31 27L51 47" stroke="#fde68a" stroke-width="7" stroke-linecap="round"/><rect x="13" y="21" width="24" height="13" rx="3" transform="rotate(-45 13 21)" fill="#f59e0b" stroke="#fef3c7" stroke-width="2.5"/><path d="M10 54H46" stroke="#fde68a" stroke-width="5" stroke-linecap="round"/></svg> ×${item.justice}</span>` : ""}
                     </div>
-                    <div class="score-val">${item.score}</div>
+                    <div class="score-val">${tallying ? "—" : item.score}</div>
                 </div>
             `;
         }).join("");
     }
 
+    function wrapLeagueStageHtml(leagueKey, rowsHtml, tallying) {
+        const signHtml = tallying
+            ? `<div class="wood-sign-overlay"><div class="wood-sign-plaque">Подведение итогов</div></div>`
+            : "";
+        return `
+            <div class="league-stage ${tallying ? "is-tallying" : ""}">
+                <div class="leaderboard">${rowsHtml}</div>
+                ${signHtml}
+            </div>
+        `;
+    }
+
     function renderBillboard() {
         const singleEl = document.getElementById("leaderboard");
         const allEl = document.getElementById("all-leagues-board");
+        const tallying = isArenaPaused() && !isAdminUser;
 
         if (!liveState) {
             singleEl.innerHTML = `<div style="color:var(--muted);">Здесь появятся результаты лиги после загрузки.</div>`;
@@ -3133,7 +3348,7 @@
         }
 
         if (billboardMode === "single") {
-            singleEl.innerHTML = renderLeagueRowsHtml(boardLeague);
+            singleEl.innerHTML = wrapLeagueStageHtml(boardLeague, renderLeagueRowsHtml(boardLeague, tallying), tallying);
         } else {
             allEl.innerHTML = Object.entries(LEAGUES).map(([key, cfg]) => `
                 <div class="league-column">
@@ -3141,7 +3356,7 @@
                         ${EMBLEMS[key] || ""}
                         <span>${cfg.title}</span>
                     </div>
-                    <div class="leaderboard">${renderLeagueRowsHtml(key)}</div>
+                    ${wrapLeagueStageHtml(key, renderLeagueRowsHtml(key, tallying), tallying)}
                 </div>
             `).join("");
         }
