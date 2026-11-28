@@ -2086,7 +2086,7 @@
         const diff = TOURNAMENT_DEADLINE.getTime() - Date.now();
         if (diff <= 0) {
             banner.classList.add("ended");
-            labelEl.textContent = "🏁 Предметная неделя завершена (28 ноября, 23:59):";
+            labelEl.textContent = "🏁 Предметная неделя завершена";
             clockEl.textContent = "00д 00:00:00";
         } else {
             banner.classList.remove("ended");
